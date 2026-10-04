@@ -1,5 +1,6 @@
 // Fonction serveur (Vercel) : la clé Groq reste ici, jamais dans le navigateur.
 // Variable d'environnement à créer sur Vercel : GROQ_API_KEY
+// Optionnel : GROQ_MODEL pour changer de modèle sans modifier le code
 
 const MAX_PER_MINUTE = 5;      // limite par visiteur (anti-abus, simple)
 const hits = new Map();
@@ -72,7 +73,7 @@ module.exports = async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
         temperature: 0.6,
         response_format: { type: 'json_object' },
         messages: [
@@ -88,7 +89,7 @@ module.exports = async (req, res) => {
       if (r.status === 429) {
         return res.status(429).json({ error: "L'IA est très sollicitée en ce moment. Réessaie dans une minute (ou avec moins de pages)." });
       }
-      return res.status(502).json({ error: "Le service d'IA est indisponible pour le moment." });
+      return res.status(502).json({ error: `Le service d'IA est indisponible pour le moment (code ${r.status}).` });
     }
 
     const content = String(data?.choices?.[0]?.message?.content || '')
