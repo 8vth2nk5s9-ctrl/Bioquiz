@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Biologie Cellulaire - Bleziri</title>
+    <meta name="description" content="Quiz interactif de biologie cellulaire et cytologie (L1) avec générateur de questions par IA.">
+    <meta name="theme-color" content="#0f172a">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div>
+                <span class="bg-emerald-500/20 text-emerald-400 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                    <i class="fa-solid fa-user-graduate text-xs mr-1"></i> Réalisé par Bleziri
+                </span>
+                <h1 class="text-lg md:text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mt-1">
+                    Biologie Cellulaire & Cytologie
+                </h1>
+            </div>
+            
+            <button onclick="openAIModal()" class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium px-3.5 py-2 rounded-xl shadow-lg transition text-xs sm:text-sm">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span class="hidden sm:inline">Générer avec l'IA</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="max-w-3xl w-full mx-auto p-4 my-auto">
+        
+        <!-- CARD ACCUEIL -->
+        <div id="introCard" class="bg-slate-800/90 border border-slate-700 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+                    <i class="fa-solid fa-dna text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Quiz Intensif de Cytologie</h2>
+                <p class="text-slate-400 text-sm max-w-lg mx-auto">
+                    Entraînez-vous sur l'ensemble des <span id="introCount">45</span> questions de biologie cellulaire avec votre groupe d'étude.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 mb-6 text-center">
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                    <div class="text-slate-400 text-xs">Questions</div>
+                    <div id="totalQuestionsCount" class="text-lg font-bold text-emerald-400">45</div>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                    <div class="text-slate-400 text-xs">Niveau</div>
+                    <div class="text-lg font-bold text-cyan-400">L1/UFHB</div>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                    <div class="text-slate-400 text-xs">Mode</div>
+                    <div class="text-lg font-bold text-purple-400">Interactif</div>
+                </div>
+            </div>
+
+            <button onclick="startQuiz()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-play"></i>
+                Commencer le Quiz
+            </button>
+        </div>
+
+        <!-- CARD QUIZ -->
+        <div id="quizCard" class="hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-6 shadow-2xl backdrop-blur">
+            <div class="mb-6">
+                <div class="flex justify-between items-center text-sm mb-2">
+                    <span id="questionProgressText" class="text-slate-400 font-medium">Question 1 / 45</span>
+                    <span id="scoreText" class="text-emerald-400 font-semibold">Score: 0</span>
+                </div>
+                <div class="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
+                    <div id="progressBar" class="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 id="questionTitle" class="text-lg md:text-xl font-semibold text-white leading-relaxed">
+                    Chargement...
+                </h3>
+            </div>
+
+            <div id="optionsContainer" class="space-y-3 mb-6"></div>
+
+            <div id="explanationBox" class="hidden mb-6 p-4 rounded-xl border text-sm leading-relaxed"></div>
+
+            <button id="nextBtn" onclick="nextQuestion()" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                <span>Question Suivante</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- CARD RESULTAT -->
+        <div id="resultCard" class="hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-6 md:p-8 shadow-2xl text-center backdrop-blur">
+            <div class="w-20 h-20 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
+                <i class="fa-solid fa-trophy text-4xl"></i>
+            </div>
+            
+            <h2 class="text-2xl font-bold text-white mb-1">Quiz terminé !</h2>
+            <p class="text-slate-400 text-sm mb-6">Voici votre résultat :</p>
+
+            <div class="bg-slate-900/80 p-6 rounded-2xl border border-slate-700 mb-6 max-w-sm mx-auto">
+                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Votre Score Final</div>
+                <div id="finalScore" class="text-4xl font-extrabold text-emerald-400 mb-2">0 / 45</div>
+                <div id="scorePercentage" class="inline-block bg-emerald-500/20 text-emerald-300 text-sm px-3 py-1 rounded-full font-semibold">
+                    0%
+                </div>
+            </div>
+
+            <p id="scoreComment" class="text-slate-300 text-sm mb-6 max-w-md mx-auto"></p>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="restartQuiz()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Recommencer
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-800">
+        Plateforme de Révision • Réalisé par Bleziri
+    </footer>
+
+    <!-- MODAL IA -->
+    <div id="aiModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeAIModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2.5 bg-purple-500/20 text-purple-400 rounded-xl border border-purple-500/30">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white">Générateur IA</h3>
+                    <p class="text-xs text-slate-400">Crée un quiz sur le sujet de ton choix</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Sujet <span class="text-slate-500 font-normal">(optionnel si tu importes un PDF)</span></label>
+                    <textarea id="aiPromptInput" rows="3" maxlength="300" placeholder="Ex : la mitose, les organites, la membrane plasmique..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Importer un cours en PDF <span class="text-slate-500 font-normal">(optionnel)</span></label>
+                    <input id="pdfInput" type="file" accept="application/pdf,.pdf" onchange="handlePdfSelect(this)" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-700 file:text-slate-200 hover:file:bg-slate-600">
+                    <div id="pdfBox" class="hidden mt-2 space-y-2">
+                        <div class="flex items-center gap-2 text-xs text-slate-300">
+                            <span>Pages</span>
+                            <input id="pdfFrom" type="number" min="1" onchange="readPdfRange()" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
+                            <span>à</span>
+                            <input id="pdfTo" type="number" min="1" onchange="readPdfRange()" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
+                            <button onclick="clearPdf()" class="ml-auto text-slate-400 hover:text-white underline underline-offset-2">Retirer</button>
+                        </div>
+                        <p id="pdfInfo" class="text-xs text-slate-400"></p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Nombre de questions</label>
+                    <select id="aiCount" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+
+                <p id="aiError" class="hidden text-rose-300 text-xs bg-rose-950/40 border border-rose-500/30 rounded-xl px-3 py-2"></p>
+
+                <button onclick="generateAIQuiz()" id="aiSubmitBtn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-bolt"></i> Générer
+                </button>
+
+                <button onclick="resetDefaultQuestions()" class="w-full text-slate-400 hover:text-white text-xs underline underline-offset-2 transition">
+                    Revenir aux questions par défaut
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lecteur PDF (extrait le texte dans le navigateur) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- Script Logic -->
+    <script>
+        const defaultQuestions = [
+            { question: "En 1665, Robert Hooke a employé pour la première fois le terme de cellule. Sur quel échantillon ?", options: ["Des alvéoles issues de coupes de tissu de liège mort", "Des bactéries", "Des cellules sanguines", "Des feuilles d'élodée"], answer: 0, explanation: "Robert Hooke a observé des alvéoles vides dans du liège mort au microscope." },
+            { question: "Quelle innovation a permis à Leeuwenhoek d'observer des animalcules avec un grossissement x300 ?", options: ["L'association de deux lentilles optiques", "Le polissage minutieux de très petites lentilles monoculaires", "L'utilisation d'un condenseur", "Les colorants"], answer: 1, explanation: "Il taillait des lentilles uniques de très forte courbure." },
+            { question: "En quelle année l'existence de micro-organismes vivants a-t-elle été reconnue par Leeuwenhoek ?", options: ["1665", "1677", "1838", "1855"], answer: 1, explanation: "C'est en 1677 qu'il communique ses travaux à la Royal Society." },
+            { question: "Quelle structure intracellulaire majeure Leeuwenhoek a-t-il observée le premier ?", options: ["Le noyau cellulaire", "La mitochondrie", "L'appareil de Golgi", "Le réticulum"], answer: 0, explanation: "Il a décrit le noyau dans les globules rouges de saumons." },
+            { question: "Quel postulat de la théorie cellulaire a été apporté par Rudolf Virchow en 1855 ?", options: ["La cellule est l'unité de base", "Toute cellule provient d'une cellule préexistante par division", "Tous les animaux sont faits de cellules", "L'ADN est le support héréditaire"], answer: 1, explanation: "Virchow a formulé : Omnis cellula e cellula." },
+            { question: "Quel est un des postulats fondateurs de la théorie cellulaire ?", options: ["La cellule est l'unité fondamentale de structure et de fonction du vivant", "Les virus sont les cellules les plus simples", "Toutes les cellules ont une paroi", "L'énergie vient du noyau"], answer: 0, explanation: "Tout organisme est composé d'une ou plusieurs cellules." },
+            { question: "En cytologie, quelle est la définition de la biologie cellulaire ?", options: ["Étude exclusive des bactéries", "Étude des structures, organites et mécanismes cellulaires", "Analyse des protéines", "Classification botanique"], answer: 1, explanation: "La cytologie étudie la structure et le fonctionnement des cellules." },
+            { question: "Laquelle de ces caractéristiques est indispensable pour définir un être vivant ?", options: ["Se déplacer avec des flagelles", "Avoir un noyau", "Maintenir son intégrité via le métabolisme et l'homéostasie", "Fabriquer sa propre lumière"], answer: 2, explanation: "L'organisation cellulaire et l'homéostasie définissent le vivant." },
+            { question: "Comment définit-on l'homéostasie au niveau cellulaire ?", options: ["Le maintien de l'équilibre du milieu intérieur", "La division incontrôlée", "La dégradation des sucres", "La modification de l'ADN"], answer: 0, explanation: "C'est le maintien des constantes physico-chimiques internes." },
+            { question: "Quels sont les 4 éléments constitutifs partagés par TOUTES les cellules ?", options: ["Noyau, mitochondrie, paroi, cytoplasme", "Membrane plasmique, cytosol, génome (ADN) et ribosomes", "Paroi, ribosomes, chloroplastes, flagelle", "Membrane, noyau, Golgi, réticulum"], answer: 1, explanation: "Toute cellule possède une membrane, du cytosol, de l'ADN et des ribosomes." },
+            { question: "Quel niveau d'organisation se situe entre le tissu et le système ?", options: ["La cellule", "La molécule", "L'organe", "L'organisme"], answer: 2, explanation: "Cellules → Tissus → Organes → Systèmes." },
+            { question: "Quelle condition est requise pour que des cellules forment un tissu ?", options: ["Avoir la même couleur", "Partager la même structure et concourir à une même fonction", "Venir de 2 individus différents", "Ne pas avoir de noyau"], answer: 1, explanation: "Un tissu rassemble des cellules similaires pour une fonction." },
+            { question: "En combien de règnes le monde vivant était-il classiquement divisé ?", options: ["2", "3", "5", "8"], answer: 2, explanation: "La classification traditionnelle comptait 5 règnes." },
+            { question: "Sur quel critère repose la classification moderne en 3 domaines ?", options: ["La taille", "Le nombre de pattes", "La structure cellulaire et les données moléculaires de l'ARN ribosomique", "L'habitat"], answer: 2, explanation: "Carl Woese s'est basé sur le séquençage de l'ARN ribosomique." },
+            { question: "Quels sont les 3 domaines de la classification moderne ?", options: ["Animaux, Végétaux, Minéraux", "Eucaryotes, Eubactéries et Archéobactéries", "Protistes, Champignons, Bactéries", "Procaryotes, Virus, Prions"], answer: 1, explanation: "Eukarya, Bacteria et Archaea." },
+            { question: "Quelle est l'unité fondamentale de base en taxonomie ?", options: ["Le genre", "Le règne", "L'espèce", "La famille"], answer: 2, explanation: "L'espèce est l'unité de base." },
+            { question: "Quel est l'ordre correct de la pyramide taxonomique (du bas vers le haut) ?", options: ["Espèce → Genre → Famille → Ordre → Classe → Embranchement → Règne", "Règne → Embranchement → Classe → Ordre → Famille → Genre → Espèce", "Genre → Espèce → Ordre → Famille", "Classe → Ordre → Famille"], answer: 0, explanation: "Du bas vers le haut : Espèce, Genre, Famille, Ordre, Classe, Embranchement, Règne." },
+            { question: "Comment caractérise-t-on la nutrition autotrophe ?", options: ["Ingérer d'autres êtres vivants", "Fabriquer sa matière organique à partir d'éléments minéraux", "Absorber des sucres déjà formés", "Vivre en symbiose avec un hôte"], answer: 1, explanation: "Elle produit sa propre matière organique à partir d'éléments minéraux." },
+            { question: "Que signifie étymologiquement le terme eucaryote ?", options: ["Sans noyau", "Vrai noyau", "Noyau primitif", "Noyau multiple"], answer: 1, explanation: "Eu (vrai) et karyon (noyau)." },
+            { question: "Quelle est la différence majeure entre procaryote et eucaryote ?", options: ["Pas de membrane chez les procaryotes", "Pas d'enveloppe nucléaire entourant l'ADN chez les procaryotes", "Pas de ribosomes chez les procaryotes", "ADN uniquement chez les eucaryotes"], answer: 1, explanation: "L'ADN procaryote est libre dans le cytoplasme." },
+            { question: "En quels sous-groupes se divise le domaine des procaryotes ?", options: ["En Eubactéries et Archéobactéries", "En Protistes et Champignons", "En Virus et Bactériophages", "En Autotrophes et Hétérotrophes"], answer: 0, explanation: "Bactéries et Archées." },
+            { question: "Au microscope, quelle est la texture du cytoplasme procaryote ?", options: ["Transparent et rigide", "Nettement plus granulaire en raison de la forte densité de ribosomes", "À réseau strié", "Compartimenté"], answer: 1, explanation: "La haute densité de ribosomes donne un aspect granuleux." },
+            { question: "Quelle est la structure de l'ADN nucléaire eucaryote ?", options: ["Un ADN circulaire libre", "Des molécules d'ADN linéaires associées à des histones", "De l'ARN double brin", "Un anneau plasmidique"], answer: 1, explanation: "L'ADN eucaryote est formé de chromosomes linéaires." },
+            { question: "Quelle est la structure de la membrane plasmique eucaryote ?", options: ["Simple couche de protéines", "Double couche de phospholipides avec protéines", "Couche solide de cellulose", "Réseau de polysaccharides"], answer: 1, explanation: "C'est une bicouche phospholipidique fluide." },
+            { question: "Quelle structure entoure la membrane plasmique des cellules végétales ?", options: ["La paroi pecto-cellulosique", "La capsule", "Le peptidoglycane", "Le collagène"], answer: 0, explanation: "Une paroi rigide de cellulose." },
+            { question: "Quelle est la forme générale du noyau eucaryote ?", options: ["Triangulaire", "Sphérique ou ovoïde", "Tubulaire", "Cubique"], answer: 1, explanation: "Le noyau est sphérique ou ovoïdal." },
+            { question: "Qu'est-ce que le nucléole ?", options: ["Un organite à double membrane", "Une région sous-compartimentée du noyau dédiée aux ARNr", "Un virus", "Le lieu de la respiration"], answer: 1, explanation: "Lieu d'assemblage des ribosomes dans le noyau." },
+            { question: "Quel terme est synonyme de cytosol ?", options: ["Hyaloplasme", "Nucléoplasme", "Stroma", "Matrice"], answer: 0, explanation: "Le hyaloplasme désigne le cytosol liquide." },
+            { question: "Chez les végétaux, quel organite correspond à l'appareil de Golgi ?", options: ["Le dictyosome", "Le centrosome", "Le thylakoïde", "Le peroxysome"], answer: 0, explanation: "Les dictyosomes composent le Golgi chez les végétaux." },
+            { question: "Chez certains protistes flagellés, quelle structure équivaut au Golgi ?", options: ["Le corps parabasal", "Le cinétosome", "Le pyrénoïde", "L'apicoplaste"], answer: 0, explanation: "Le corps parabasal est l'homologue du Golgi chez eux." },
+            { question: "Quelle affirmation caractérise la nature du corps parabasal ?", options: ["C'est un organite cellulaire équivalent au Golgi", "C'est une bactérie", "C'est le noyau", "C'est de l'amidon"], answer: 0, explanation: "C'est bien un organite cellulaire." },
+            { question: "Quelle est la définition du métabolisme ?", options: ["L'ensemble des réactions chimiques cellulaires pour maintenir la vie", "La vitesse de circulation du sang", "La respiration pulmonaire", "La reproduction"], answer: 0, explanation: "Ensemble des voies biochimiques de la cellule." },
+            { question: "Comment nomme-t-on les réactions de dégradation libérant de l'énergie ?", options: ["Le catabolisme", "L'anabolisme", "La néoglucogenèse", "L'endocytose"], answer: 0, explanation: "Le catabolisme dégrade les molécules et produit de l'ATP." },
+            { question: "Comment nomme-t-on les réactions de synthèse consommant de l'énergie ?", options: ["L'anabolisme", "Le catabolisme", "La lyse", "La glycolyse"], answer: 0, explanation: "L'anabolisme synthétise les macromolécules." },
+            { question: "Quelle molécule sert de monnaie d'énergie directe ?", options: ["L'ATP", "L'ADN", "Le glucose", "Le cholestérol"], answer: 0, explanation: "L'ATP fournit l'énergie nécessaire aux réactions." },
+            { question: "Quel est le rôle d'une enzyme ?", options: ["Catalyser et accélérer une réaction biochimique", "Stocker l'information génétique", "Former la membrane", "Fournir des calories"], answer: 0, explanation: "Les enzymes sont des biocatalyseurs." },
+            { question: "Si l'on étudie un organisme unicellulaire à noyau, quelles sciences sont impliquées ?", options: ["Biologie cellulaire et microbiologie", "Géologie et botanique", "Anatomie", "Astrophysique"], answer: 0, explanation: "La microbiologie et la cytologie étudient les protistes." },
+            { question: "Quelle différence sépare l'ADN d'une eubactérie de celui d'un humain ?", options: ["L'ADN bactérien est circulaire et libre dans le cytoplasme", "Il n'y a pas de bases azotées chez la bactérie", "L'ADN humain est en boucle plasmidique", "L'ADN humain se trouve uniquement dans les mitochondries"], answer: 0, explanation: "L'ADN bactérien est circulaire et sans noyau." },
+            { question: "Quelle est la nutrition d'une cellule animale ?", options: ["Hétérotrophe", "Autotrophe", "Lithotrophe", "Phototrophe"], answer: 0, explanation: "Les cellules animales consomment de la matière organique." },
+            { question: "Un organisme unicellulaire sans noyau vivant dans un milieu extrême (très salé, très chaud) est probablement :", options: ["Une archéobactérie", "Une eubactérie Gram+", "Un champignon", "Un virus"], answer: 0, explanation: "Les Archées vivent souvent dans des milieux extrêmes." },
+            { question: "En quoi Hooke se distingue-t-il de Leeuwenhoek ?", options: ["Hooke a vu des parois de cellules mortes, Leeuwenhoek des cellules vivantes", "Hooke avait un microscope électronique", "Hooke a découvert l'ADN", "Hooke a vu des virus"], answer: 0, explanation: "Hooke a vu le liège mort, Leeuwenhoek les animalcules vivants." },
+            { question: "Si deux espèces ont le même ordre, elles ont obligatoirement :", options: ["La même classe", "La même famille", "Le même genre", "La même espèce"], answer: 0, explanation: "La classe est le rang supérieur à l'ordre." },
+            { question: "Quelle structure contient le génome chez les eucaryotes ?", options: ["Le noyau", "Le lysosome", "Le peroxysome", "Le centrosome"], answer: 0, explanation: "Le noyau abrite les chromosomes." },
+            { question: "Quelle est la fonction des ribosomes ?", options: ["Synthèse des protéines", "Production d'ATP", "Stockage des lipides", "Sécrétion"], answer: 0, explanation: "Les ribosomes traduisent l'ARNm en protéines." },
+            { question: "Pourquoi ne faut-il pas confondre paroi végétale et membrane plasmique ?", options: ["La paroi est une enveloppe externe rigide ; la membrane est la bicouche lipidique interne", "La paroi est dans le noyau", "La membrane est en bois", "La paroi existe chez les animaux"], answer: 0, explanation: "La paroi entoure la membrane plasmique." }
+        ];
+
+        let quizQuestions = [...defaultQuestions];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answered = false;
+
+        const $ = (id) => document.getElementById(id);
+        const introCard = $('introCard');
+        const quizCard = $('quizCard');
+        const resultCard = $('resultCard');
+        const aiModal = $('aiModal');
+        const totalQuestionsCount = $('totalQuestionsCount');
+        const introCount = $('introCount');
+        const questionProgressText = $('questionProgressText');
+        const scoreText = $('scoreText');
+        const progressBar = $('progressBar');
+        const questionTitle = $('questionTitle');
+        const optionsContainer = $('optionsContainer');
+        const explanationBox = $('explanationBox');
+        const nextBtn = $('nextBtn');
+        const aiError = $('aiError');
+
+        function updateCounts() {
+            totalQuestionsCount.textContent = quizQuestions.length;
+            introCount.textContent = quizQuestions.length;
+        }
+        updateCounts();
+
+        // Mélange Fisher-Yates
+        function shuffle(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        // Mélange les options de chaque question pour que la bonne réponse ne soit pas toujours en A
+        function prepareQuestions(list) {
+            return list.map(q => {
+                const correctText = q.options[q.answer];
+                const options = shuffle(q.options);
+                return { ...q, options, answer: options.indexOf(correctText) };
+            });
+        }
+
+        function showNext(visible) {
+            nextBtn.classList.toggle('hidden', !visible);
+            nextBtn.classList.toggle('flex', visible);
+        }
+
+        function startQuiz() {
+            quizQuestions = prepareQuestions(quizQuestions);
+            currentQuestionIndex = 0;
+            score = 0;
+            introCard.classList.add('hidden');
+            resultCard.classList.add('hidden');
+            quizCard.classList.remove('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            answered = false;
+            showNext(false);
+            explanationBox.classList.add('hidden');
+
+            const q = quizQuestions[currentQuestionIndex];
+            const isLast = currentQuestionIndex === quizQuestions.length - 1;
+            nextBtn.querySelector('span').textContent = isLast ? 'Voir le résultat' : 'Question suivante';
+
+            questionProgressText.textContent = `Question ${currentQuestionIndex + 1} / ${quizQuestions.length}`;
+            scoreText.textContent = `Score : ${score}`;
+            progressBar.style.width = `${(currentQuestionIndex / quizQuestions.length) * 100}%`;
+
+            questionTitle.textContent = q.question;
+            optionsContainer.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl bg-slate-900/60 border border-slate-700 hover:border-emerald-500/50 hover:bg-slate-700/50 transition flex items-center justify-between gap-3 text-sm sm:text-base font-medium group";
+                btn.onclick = () => selectOption(idx);
+
+                const left = document.createElement('span');
+                left.className = "flex items-center gap-3";
+
+                const letter = document.createElement('span');
+                letter.className = "w-7 h-7 shrink-0 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center text-xs font-bold group-hover:border-emerald-500/50 group-hover:text-emerald-400";
+                letter.textContent = String.fromCharCode(65 + idx);
+
+                const label = document.createElement('span');
+                label.textContent = opt; // textContent : pas d'injection HTML possible
+
+                left.append(letter, label);
+
+                const icon = document.createElement('i');
+                icon.className = "fa-regular fa-circle shrink-0 text-slate-600 group-hover:text-emerald-400";
+
+                btn.append(left, icon);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(index) {
+            if (answered) return;
+            answered = true;
+
+            const q = quizQuestions[currentQuestionIndex];
+            const isCorrect = (index === q.answer);
+            if (isCorrect) score++;
+
+            const buttons = optionsContainer.children;
+            for (let i = 0; i < buttons.length; i++) {
+                const icon = buttons[i].querySelector('i');
+                buttons[i].disabled = true;
+                buttons[i].classList.remove('hover:border-emerald-500/50', 'hover:bg-slate-700/50');
+                if (i === q.answer) {
+                    buttons[i].className = "w-full text-left p-4 rounded-xl bg-emerald-500/20 border-2 border-emerald-500 text-emerald-200 text-sm sm:text-base font-medium flex items-center justify-between gap-3";
+                    icon.className = "fa-solid fa-circle-check shrink-0 text-emerald-400 text-lg";
+                } else if (i === index) {
+                    buttons[i].className = "w-full text-left p-4 rounded-xl bg-rose-500/20 border-2 border-rose-500 text-rose-200 text-sm sm:text-base font-medium flex items-center justify-between gap-3";
+                    icon.className = "fa-solid fa-circle-xmark shrink-0 text-rose-400 text-lg";
+                } else {
+                    buttons[i].classList.add('opacity-40');
+                }
+            }
+
+            explanationBox.className = isCorrect
+                ? "mb-6 p-4 rounded-xl border text-sm leading-relaxed bg-emerald-950/40 border-emerald-500/30 text-emerald-300"
+                : "mb-6 p-4 rounded-xl border text-sm leading-relaxed bg-rose-950/40 border-rose-500/30 text-rose-300";
+
+            explanationBox.innerHTML = '';
+            const title = document.createElement('div');
+            title.className = "font-bold mb-1 flex items-center gap-2";
+            const ti = document.createElement('i');
+            ti.className = isCorrect ? 'fa-solid fa-circle-check' : 'fa-solid fa-triangle-exclamation';
+            title.append(ti, document.createTextNode(isCorrect ? 'Excellente réponse !' : 'Réponse incorrecte'));
+            const text = document.createElement('div');
+            text.textContent = q.explanation || '';
+            explanationBox.append(title, text);
+            explanationBox.classList.remove('hidden');
+
+            scoreText.textContent = `Score : ${score}`;
+            showNext(true);
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizQuestions.length) {
+                showQuestion();
+            } else {
+                showFinalResults();
+            }
+        }
+
+        function showFinalResults() {
+            progressBar.style.width = '100%';
+            quizCard.classList.add('hidden');
+            resultCard.classList.remove('hidden');
+
+            const total = quizQuestions.length;
+            const percentage = Math.round((score / total) * 100);
+
+            $('finalScore').textContent = `${score} / ${total}`;
+            $('scorePercentage').textContent = `${percentage}% de réussite`;
+
+            const comment = $('scoreComment');
+            if (percentage >= 85) {
+                comment.textContent = "Félicitations ! Vous maîtrisez parfaitement la cytologie.";
+            } else if (percentage >= 60) {
+                comment.textContent = "Bon travail ! Quelques révisions vous permettront d'atteindre le top.";
+            } else {
+                comment.textContent = "Continuez de relire vos cours pour consolider vos acquis.";
+            }
+        }
+
+        function restartQuiz() { startQuiz(); }
+
+        // ---------- Modale IA ----------
+        function openAIModal() {
+            aiError.classList.add('hidden');
+            aiModal.classList.remove('hidden');
+            aiModal.classList.add('flex');
+        }
+        function closeAIModal() {
+            aiModal.classList.add('hidden');
+            aiModal.classList.remove('flex');
+        }
+        aiModal.addEventListener('click', (e) => { if (e.target === aiModal) closeAIModal(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAIModal(); });
+
+        function resetDefaultQuestions() {
+            quizQuestions = [...defaultQuestions];
+            updateCounts();
+            closeAIModal();
+            quizCard.classList.add('hidden');
+            resultCard.classList.add('hidden');
+            introCard.classList.remove('hidden');
+        }
+
+        function showAIError(msg) {
+            aiError.textContent = msg;
+            aiError.classList.remove('hidden');
+        }
+
+        // Vérifie et nettoie les questions renvoyées par l'IA
+        function validateQuestions(list) {
+            if (!Array.isArray(list) || list.length === 0) throw new Error("Aucune question valide reçue.");
+            return list.map((q, i) => {
+                const options = Array.isArray(q.options) ? q.options.map(String) : [];
+                const answer = Number(q.answer);
+                if (!q.question || options.length < 2 || !Number.isInteger(answer) || answer < 0 || answer >= options.length) {
+                    throw new Error(`La question ${i + 1} est mal formée.`);
+                }
+                return { question: String(q.question), options, answer, explanation: String(q.explanation || '') };
+            });
+        }
+
+        // ---------- Import PDF ----------
+        const PDF_MAX_CHARS = 12000; // limite de texte envoyé à l'IA
+        let pdfDoc = null;
+        let pdfText = '';
+        let pdfBusy = false;
+        const pdfBox = $('pdfBox');
+        const pdfInfo = $('pdfInfo');
+
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        function clearPdf() {
+            pdfDoc = null;
+            pdfText = '';
+            $('pdfInput').value = '';
+            pdfBox.classList.add('hidden');
+            pdfInfo.textContent = '';
+        }
+
+        async function handlePdfSelect(input) {
+            aiError.classList.add('hidden');
+            const file = input.files[0];
+            if (!file) { clearPdf(); return; }
+
+            if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+                clearPdf();
+                showAIError("Choisis un fichier PDF.");
+                return;
+            }
+            if (file.size > 20 * 1024 * 1024) {
+                clearPdf();
+                showAIError("PDF trop lourd (20 Mo maximum).");
+                return;
+            }
+            if (typeof pdfjsLib === 'undefined') {
+                clearPdf();
+                showAIError("Le lecteur PDF n'a pas pu se charger. Vérifie ta connexion et recharge la page.");
+                return;
+            }
+
+            pdfBox.classList.remove('hidden');
+            pdfInfo.textContent = 'Lecture du PDF...';
+            pdfBusy = true;
+            try {
+                const data = await file.arrayBuffer();
+                pdfDoc = await pdfjsLib.getDocument({ data }).promise;
+                pdfDoc.fileLabel = file.name;
+                $('pdfFrom').value = 1;
+                $('pdfTo').value = pdfDoc.numPages;
+                $('pdfFrom').max = $('pdfTo').max = pdfDoc.numPages;
+                await readPdfRange();
+            } catch (e) {
+                clearPdf();
+                showAIError("Impossible de lire ce PDF (fichier protégé ou abîmé ?).");
+            } finally {
+                pdfBusy = false;
+            }
+        }
+
+        async function readPdfRange() {
+            if (!pdfDoc) return;
+            pdfBusy = true;
+            try {
+                let from = parseInt($('pdfFrom').value, 10) || 1;
+                let to = parseInt($('pdfTo').value, 10) || pdfDoc.numPages;
+                from = Math.min(Math.max(1, from), pdfDoc.numPages);
+                to = Math.min(Math.max(from, to), pdfDoc.numPages);
+                $('pdfFrom').value = from;
+                $('pdfTo').value = to;
+                pdfInfo.textContent = 'Lecture des pages...';
+
+                let text = '', last = from - 1, truncated = false;
+                for (let p = from; p <= to; p++) {
+                    const page = await pdfDoc.getPage(p);
+                    const content = await page.getTextContent();
+                    const pageText = content.items.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim();
+                    if (text.length + pageText.length + 1 > PDF_MAX_CHARS) {
+                        if (!text) { text = pageText.slice(0, PDF_MAX_CHARS); last = p; }
+                        truncated = true;
+                        break;
+                    }
+                    text += (text ? '\n' : '') + pageText;
+                    last = p;
+                }
+
+                pdfText = text.trim();
+                if (!pdfText) {
+                    pdfInfo.textContent = "Aucun texte trouvé : ce PDF est probablement un scan (image). Utilise un PDF dont on peut sélectionner le texte.";
+                } else {
+                    pdfInfo.textContent = `✓ ${pdfDoc.fileLabel} : pages ${from} à ${last} lues`
+                        + (truncated ? " (limite de taille atteinte : choisis un autre intervalle pour la suite)." : ".");
+                }
+            } catch (e) {
+                pdfText = '';
+                pdfInfo.textContent = "Erreur de lecture des pages.";
+            } finally {
+                pdfBusy = false;
+            }
+        }
+
+        // ---------- Génération ----------
+        async function generateAIQuiz() {
+            const topic = $('aiPromptInput').value.trim();
+            const count = Number($('aiCount').value);
+            const submitBtn = $('aiSubmitBtn');
+
+            aiError.classList.add('hidden');
+            if (pdfBusy) {
+                showAIError("Patiente, le PDF est en cours de lecture...");
+                return;
+            }
+            if (pdfDoc && !pdfText) {
+                showAIError("Ce PDF ne contient pas de texte lisible. Retire-le ou choisis un autre fichier.");
+                return;
+            }
+            if (topic.length < 3 && !pdfText) {
+                showAIError("Décris le sujet du quiz ou importe un PDF.");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Génération...`;
+
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 45000);
+
+            try {
+                // La clé API reste sur le serveur : elle n'apparaît jamais ici.
+                const res = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, count, text: pdfText }),
+                    signal: controller.signal
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || `Erreur du serveur (${res.status}).`);
+                }
+
+                quizQuestions = validateQuestions(data.questions);
+                updateCounts();
+                closeAIModal();
+                startQuiz();
+            } catch (e) {
+                const msg = e.name === 'AbortError'
+                    ? "Le serveur met trop de temps à répondre. Réessaie."
+                    : e.message;
+                showAIError("Erreur de génération : " + msg);
+            } finally {
+                clearTimeout(timer);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Générer`;
+            }
+        }
+    </script>
+</body>
+</html>
