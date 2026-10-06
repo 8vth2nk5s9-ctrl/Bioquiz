@@ -1,205 +1,353 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full bg-slate-900">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Biologie Cellulaire - Bleziri</title>
-    <meta name="description" content="Quiz interactif de biologie cellulaire et cytologie (L1) avec générateur de questions par IA.">
-    <meta name="theme-color" content="#0f172a">
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>BioQuiz - Biologie cellulaire, Licence 1</title>
+    <meta name="description" content="Quiz de révision en biologie cellulaire pour la Licence 1 : chapitres, scores sauvegardés, correction des erreurs et quiz générés par IA.">
+    <meta name="theme-color" content="#F4F2F8" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#14122B" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23E7E6F7'/%3E%3Cellipse cx='25' cy='28' rx='13' ry='11' fill='%23FBE6EE' stroke='%23C93A6E' stroke-width='2'/%3E%3Ccircle cx='26' cy='28' r='5' fill='%233F3D9A'/%3E%3Cellipse cx='43' cy='42' rx='11' ry='9' fill='%23FBE6EE' stroke='%23C93A6E' stroke-width='2'/%3E%3Ccircle cx='43' cy='42' r='4' fill='%233F3D9A'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Newsreader:opsz,wght@6..72,400..600&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        /* ---------- Couleurs : les colorants d'une lame de cytologie ----------
+           hématoxyline (bleu-violet) = noyaux, éosine (rose) = cytoplasme,
+           vert d'eau = bonne réponse. */
+        :root {
+            --paper: #F4F2F8;
+            --surface: #FFFFFF;
+            --ink: #1D1B3A;
+            --muted: #615E7E;
+            --line: #DEDAEC;
+            --hema: #3F3D9A;
+            --hema-ink: #FFFFFF;
+            --hema-soft: #E7E6F7;
+            --eosin: #C93A6E;
+            --eosin-ink: #9E2552;
+            --eosin-soft: #FBE6EE;
+            --ok: #0E7C6B;
+            --ok-ink: #0B5F52;
+            --ok-soft: #DDF3EE;
+            --display: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            --reading: "Newsreader", Georgia, "Times New Roman", serif;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --paper: #14122B;
+                --surface: #1E1B3C;
+                --ink: #EEEDFA;
+                --muted: #A9A6C7;
+                --line: #35315F;
+                --hema: #9795F2;
+                --hema-ink: #14122B;
+                --hema-soft: #2A2757;
+                --eosin: #F07AA2;
+                --eosin-ink: #F7A3C0;
+                --eosin-soft: #3A1F36;
+                --ok: #4FD1B8;
+                --ok-ink: #8FE6D3;
+                --ok-soft: #153B3A;
+            }
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; scroll-padding-top: 76px; }
+        body {
+            margin: 0;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            background: var(--paper);
+            color: var(--ink);
+            font: 400 16px/1.5 var(--display);
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, p { margin: 0; }
+        a { color: inherit; }
+        button, input, textarea, select { font: inherit; color: inherit; }
+        :focus-visible { outline: 3px solid var(--hema); outline-offset: 2px; border-radius: 6px; }
+        main:focus { outline: none; }
+        .wrap { width: min(100% - 40px, 720px); margin-inline: auto; }
+        .skip { position: absolute; left: -999px; top: 8px; background: var(--hema); color: var(--hema-ink); padding: 10px 14px; border-radius: 10px; z-index: 50; }
+        .skip:focus { left: 12px; }
+
+        /* ---------- En-tête ---------- */
+        .top {
+            position: sticky; top: 0; z-index: 20;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+        }
+        .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; }
+        .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+        .brand svg { width: 30px; height: 30px; flex: none; }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            min-height: 44px; padding: 0 16px;
+            border-radius: 12px; border: 1.5px solid var(--line);
+            background: var(--surface); color: var(--ink);
+            font-weight: 650; font-size: 15px; text-decoration: none; cursor: pointer;
+        }
+        .btn:hover { border-color: var(--hema); }
+        .btn svg { width: 18px; height: 18px; flex: none; }
+        .ico { display: inline-flex; flex: none; }
+        .ico svg { width: 18px; height: 18px; }
+        .row .ico { color: var(--muted); }
+        .crumbs .ico svg { width: 14px; height: 14px; }
+        .banner .go .ico svg { width: 16px; height: 16px; }
+        .opt .letter .ico svg { width: 16px; height: 16px; }
+        .quiz-head .back .ico svg { width: 22px; height: 22px; }
+        .btn-primary { background: var(--hema); border-color: var(--hema); color: var(--hema-ink); }
+        .btn-primary:hover { filter: brightness(1.08); }
+        .btn-primary:disabled { opacity: .6; cursor: wait; }
+        .btn-block { width: 100%; }
+        .btn-quiet { background: transparent; }
+        .label-short { display: none; }
+        @media (max-width: 480px) { .label-long { display: none; } .label-short { display: inline; } }
+
+        /* ---------- Accueil ---------- */
+        .hero { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 30px 0 6px; }
+        h1 { font-weight: 800; font-size: clamp(2.1rem, 7.5vw, 3rem); line-height: 1.02; letter-spacing: -0.03em; }
+        .hero p { color: var(--muted); max-width: 40ch; margin-top: 10px; }
+        .hero .tally { color: var(--ink); font-weight: 650; margin-top: 14px; }
+        .lens { flex: none; width: 116px; height: 116px; }
+        .lens .ring-track { stroke: var(--line); }
+        .lens .ring { stroke: var(--hema); transition: stroke-dashoffset 1.1s cubic-bezier(.2,.7,.2,1); }
+        @media (max-width: 420px) { .lens { width: 100px; height: 100px; } .row { gap: 12px; padding: 16px 14px; } .row .num { width: 34px; font-size: 1.4rem; } }
+
+        h2 { font-weight: 750; font-size: 1.15rem; letter-spacing: -0.01em; margin: 34px 0 12px; }
+        .hint { color: var(--muted); font-size: .92rem; margin: -6px 0 12px; }
+
+        .banner {
+            display: block; margin-top: 26px; padding: 22px 22px 20px;
+            border-radius: 18px; text-decoration: none;
+            background: var(--hema); color: var(--hema-ink);
+        }
+        .banner:hover { filter: brightness(1.07); }
+        .banner h2 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; }
+        .banner p { margin-top: 6px; opacity: .92; max-width: 46ch; }
+        .banner .foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; font-weight: 650; }
+        .banner .go { display: inline-flex; align-items: center; gap: 6px; background: var(--hema-ink); color: var(--hema); padding: 8px 14px; border-radius: 10px; }
+
+        .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+        .row { display: flex; align-items: center; gap: 16px; padding: 16px 18px; text-decoration: none; color: inherit; }
+        .row + .row { border-top: 1px solid var(--line); }
+        a.row:hover { background: var(--hema-soft); }
+        .row .num { flex: none; width: 46px; font-weight: 800; font-size: 1.6rem; line-height: 1; letter-spacing: -0.02em; color: var(--hema); }
+        .row .body { flex: 1; min-width: 0; }
+        .row .title { font-weight: 700; line-height: 1.25; }
+        .row .desc { color: var(--muted); font-size: .92rem; margin-top: 3px; }
+        .row .side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; font-size: .85rem; color: var(--muted); white-space: nowrap; }
+        .row.soon { color: var(--muted); }
+        .row.soon .num { color: var(--muted); opacity: .7; }
+        .row.soon .title { font-weight: 600; }
+        .badge { font-size: .8rem; font-weight: 650; padding: 3px 10px; border-radius: 99px; border: 1.5px dashed var(--line); color: var(--muted); }
+        .score { font-weight: 750; font-size: .85rem; padding: 3px 10px; border-radius: 99px; background: var(--hema-soft); color: var(--hema); }
+        .score.good { background: var(--ok-soft); color: var(--ok-ink); }
+        .score.low { background: var(--eosin-soft); color: var(--eosin-ink); }
+        .todo { font-size: .85rem; color: var(--muted); }
+
+        details.themes { margin-top: 34px; }
+        details.themes summary { cursor: pointer; font-weight: 750; font-size: 1.15rem; letter-spacing: -0.01em; padding: 6px 0; }
+        details.themes[open] summary { margin-bottom: 10px; }
+        details.themes p { color: var(--muted); font-size: .92rem; margin-bottom: 12px; }
+
+        footer { margin-top: auto; padding: 44px 0 calc(28px + env(safe-area-inset-bottom)); color: var(--muted); font-size: .9rem; }
+
+        /* ---------- Page chapitre ---------- */
+        .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: .92rem; padding: 22px 0 4px; }
+        .crumbs a { text-decoration: none; }
+        .crumbs a:hover { text-decoration: underline; color: var(--ink); }
+        .chapter-head { padding: 8px 0 8px; }
+        .chapter-head .kicker { font-weight: 750; color: var(--hema); font-size: 1.05rem; }
+        .chapter-head h1 { font-size: clamp(1.8rem, 6vw, 2.4rem); margin-top: 4px; }
+        .chapter-head p { color: var(--muted); margin-top: 10px; max-width: 52ch; }
+
+        /* ---------- Quiz ---------- */
+        .quiz-head { display: flex; align-items: center; gap: 12px; padding: 18px 0 0; }
+        .quiz-head .back { flex: none; min-height: 44px; min-width: 44px; padding: 0 12px; }
+        .quiz-head .name { min-width: 0; font-weight: 700; line-height: 1.25; }
+        .quiz-head .name small { display: block; font-weight: 500; color: var(--muted); font-size: .85rem; }
+        .meter { display: flex; align-items: center; gap: 14px; margin-top: 16px; font-size: .92rem; color: var(--muted); }
+        .meter .bar { flex: 1; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+        .meter .bar i { display: block; height: 100%; background: var(--hema); border-radius: 99px; transition: width .3s ease; }
+        .meter b { color: var(--ink); font-weight: 700; }
+
+        .question { font-family: var(--reading); font-weight: 500; font-size: clamp(1.22rem, 4.6vw, 1.5rem); line-height: 1.42; margin: 26px 0 20px; max-width: 38em; text-wrap: pretty; }
+        .opts { display: grid; gap: 10px; }
+        .opt {
+            display: flex; align-items: flex-start; gap: 14px; width: 100%; text-align: left;
+            padding: 14px 16px; border-radius: 14px;
+            border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+            font-weight: 500; font-size: 1rem; line-height: 1.4; cursor: pointer;
+        }
+        .opt .letter {
+            flex: none; width: 28px; height: 28px; border-radius: 50%;
+            display: grid; place-items: center;
+            border: 1.5px solid var(--line); color: var(--muted); font-weight: 700; font-size: .85rem;
+        }
+        .opt:hover:not(.locked) { border-color: var(--hema); }
+        .opt.locked { cursor: default; }
+        .opt.dim { opacity: .55; }
+        .opt.correct { border-color: var(--ok); background: var(--ok-soft); opacity: 1; }
+        .opt.correct .letter { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+        .opt.wrong { border-color: var(--eosin); background: var(--eosin-soft); opacity: 1; }
+        .opt.wrong .letter { background: var(--eosin); border-color: var(--eosin); color: var(--surface); }
+
+        .feedback { margin-top: 18px; padding: 14px 16px; border-radius: 14px; }
+        .feedback.ok { background: var(--ok-soft); color: var(--ok-ink); }
+        .feedback.ko { background: var(--eosin-soft); color: var(--eosin-ink); }
+        .feedback strong { display: block; font-weight: 750; }
+        .feedback p { font-family: var(--reading); font-size: 1.05rem; line-height: 1.5; margin-top: 4px; color: var(--ink); }
+        .actions { position: sticky; bottom: 0; margin-top: 22px; padding: 12px 0 calc(14px + env(safe-area-inset-bottom)); background: var(--paper); border-top: 1px solid var(--line); }
+        .actions .btn { min-height: 50px; }
+        .actions[hidden] { display: none; }
+
+        /* ---------- Résultat ---------- */
+        .result { padding-top: 26px; }
+        .result .kicker { color: var(--muted); font-weight: 600; }
+        .score-big { font-weight: 800; font-size: clamp(3.8rem, 18vw, 5.4rem); line-height: 1; letter-spacing: -0.04em; margin-top: 6px; }
+        .score-big span { color: var(--muted); font-weight: 600; font-size: .5em; letter-spacing: -0.02em; }
+        .verdict { margin-top: 12px; font-size: 1.1rem; max-width: 36ch; }
+        .stats { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; color: var(--muted); font-size: .95rem; }
+        .stats b { color: var(--ink); }
+        .stack { display: grid; gap: 10px; margin-top: 24px; }
+        @media (min-width: 560px) { .stack.two { grid-template-columns: 1fr 1fr; } }
+        .review { margin-top: 30px; }
+        .review h2 { margin-top: 0; }
+        .miss { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+        .miss + .miss { margin-top: 10px; }
+        .miss .q { font-family: var(--reading); font-weight: 500; font-size: 1.12rem; line-height: 1.4; }
+        .miss .a { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; font-size: .95rem; }
+        .miss .a .ico { margin-top: 2px; }
+        .miss .a.no { color: var(--eosin-ink); }
+        .miss .a.yes { color: var(--ok-ink); }
+        .miss .why { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-family: var(--reading); font-size: 1.02rem; color: var(--muted); }
+        .all-good { padding: 18px; border-radius: 16px; background: var(--ok-soft); color: var(--ok-ink); font-weight: 650; }
+
+        /* ---------- Fenêtre « Créer un quiz avec l'IA » ---------- */
+        dialog { border: 1px solid var(--line); border-radius: 20px; padding: 0; background: var(--surface); color: var(--ink); width: min(540px, calc(100% - 24px)); max-height: 92dvh; }
+        dialog::backdrop { background: rgba(20, 18, 43, .6); }
+        .dlg { padding: 22px; max-height: 92dvh; overflow: auto; }
+        .dlg-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .dlg h2 { margin: 0; font-size: 1.3rem; }
+        .dlg .lead { color: var(--muted); margin-top: 4px; font-size: .95rem; }
+        .field-group { margin-top: 18px; }
+        .field-group > label { display: block; font-weight: 650; margin-bottom: 6px; }
+        .field-group small { display: block; color: var(--muted); margin-top: 5px; font-size: .85rem; }
+        .field { width: 100%; min-height: 46px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--paper); }
+        textarea.field { resize: vertical; min-height: 84px; }
+        input[type=file].field { padding: 8px; min-height: 0; font-size: .9rem; }
+        .range { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: .92rem; }
+        .range .field { width: 76px; min-height: 40px; }
+        .error { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: var(--eosin-soft); color: var(--eosin-ink); font-weight: 600; font-size: .95rem; }
+        .dlg .btn-primary { margin-top: 20px; min-height: 50px; }
+        [hidden] { display: none !important; }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+        }
     </style>
 </head>
-<body class="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between">
+<body>
+    <a class="skip" href="#main">Aller au contenu</a>
 
-    <!-- Header -->
-    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-50">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div>
-                <span class="bg-emerald-500/20 text-emerald-400 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                    <i class="fa-solid fa-user-graduate text-xs mr-1"></i> Réalisé par Bleziri
-                </span>
-                <h1 class="text-lg md:text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mt-1">
-                    Biologie Cellulaire & Cytologie
-                </h1>
-            </div>
-            
-            <button onclick="openAIModal()" class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium px-3.5 py-2 rounded-xl shadow-lg transition text-xs sm:text-sm">
-                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                <span class="hidden sm:inline">Générer avec l'IA</span>
+    <header class="top">
+        <div class="wrap">
+            <a class="brand" href="#/" aria-label="BioQuiz, retour à l'accueil">
+                <svg viewBox="0 0 64 64" aria-hidden="true">
+                    <circle cx="32" cy="32" r="30" fill="var(--hema-soft)"/>
+                    <ellipse cx="25" cy="28" rx="13" ry="11" fill="var(--eosin-soft)" stroke="var(--eosin)" stroke-width="2"/>
+                    <circle cx="26" cy="28" r="5" fill="var(--hema)"/>
+                    <ellipse cx="43" cy="42" rx="11" ry="9" fill="var(--eosin-soft)" stroke="var(--eosin)" stroke-width="2"/>
+                    <circle cx="43" cy="42" r="4" fill="var(--hema)"/>
+                </svg>
+                BioQuiz
+            </a>
+            <button class="btn" id="openAI" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg>
+                <span class="label-long">Créer un quiz avec l'IA</span><span class="label-short">Quiz IA</span>
             </button>
         </div>
     </header>
 
-    <!-- Content -->
-    <main class="max-w-3xl w-full mx-auto p-4 my-auto">
-        
-        <!-- CARD ACCUEIL -->
-        <div id="introCard" class="bg-slate-800/90 border border-slate-700 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
-                    <i class="fa-solid fa-dna text-3xl"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-white mb-2">Quiz Intensif de Cytologie</h2>
-                <p class="text-slate-400 text-sm max-w-lg mx-auto">
-                    Entraînez-vous sur l'ensemble des <span id="introCount">45</span> questions de biologie cellulaire avec votre groupe d'étude.
-                </p>
-            </div>
+    <main id="main" class="wrap" tabindex="-1"></main>
 
-            <div class="grid grid-cols-3 gap-3 mb-6 text-center">
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
-                    <div class="text-slate-400 text-xs">Questions</div>
-                    <div id="totalQuestionsCount" class="text-lg font-bold text-emerald-400">45</div>
-                </div>
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
-                    <div class="text-slate-400 text-xs">Niveau</div>
-                    <div class="text-lg font-bold text-cyan-400">L1/UFHB</div>
-                </div>
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
-                    <div class="text-slate-400 text-xs">Mode</div>
-                    <div class="text-lg font-bold text-purple-400">Interactif</div>
-                </div>
-            </div>
-
-            <button onclick="startQuiz()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-play"></i>
-                Commencer le Quiz
-            </button>
-        </div>
-
-        <!-- CARD QUIZ -->
-        <div id="quizCard" class="hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-6 shadow-2xl backdrop-blur">
-            <div class="mb-6">
-                <div class="flex justify-between items-center text-sm mb-2">
-                    <span id="questionProgressText" class="text-slate-400 font-medium">Question 1 / 45</span>
-                    <span id="scoreText" class="text-emerald-400 font-semibold">Score: 0</span>
-                </div>
-                <div class="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
-                    <div id="progressBar" class="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-                </div>
-            </div>
-
-            <div class="mb-6">
-                <h3 id="questionTitle" class="text-lg md:text-xl font-semibold text-white leading-relaxed">
-                    Chargement...
-                </h3>
-            </div>
-
-            <div id="optionsContainer" class="space-y-3 mb-6"></div>
-
-            <div id="explanationBox" class="hidden mb-6 p-4 rounded-xl border text-sm leading-relaxed"></div>
-
-            <button id="nextBtn" onclick="nextQuestion()" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
-                <span>Question Suivante</span>
-                <i class="fa-solid fa-arrow-right"></i>
-            </button>
-        </div>
-
-        <!-- CARD RESULTAT -->
-        <div id="resultCard" class="hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-6 md:p-8 shadow-2xl text-center backdrop-blur">
-            <div class="w-20 h-20 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/20">
-                <i class="fa-solid fa-trophy text-4xl"></i>
-            </div>
-            
-            <h2 class="text-2xl font-bold text-white mb-1">Quiz terminé !</h2>
-            <p class="text-slate-400 text-sm mb-6">Voici votre résultat :</p>
-
-            <div class="bg-slate-900/80 p-6 rounded-2xl border border-slate-700 mb-6 max-w-sm mx-auto">
-                <div class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Votre Score Final</div>
-                <div id="finalScore" class="text-4xl font-extrabold text-emerald-400 mb-2">0 / 45</div>
-                <div id="scorePercentage" class="inline-block bg-emerald-500/20 text-emerald-300 text-sm px-3 py-1 rounded-full font-semibold">
-                    0%
-                </div>
-            </div>
-
-            <p id="scoreComment" class="text-slate-300 text-sm mb-6 max-w-md mx-auto"></p>
-
-            <div class="flex flex-col sm:flex-row gap-3">
-                <button onclick="restartQuiz()" class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-rotate-right"></i> Recommencer
-                </button>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="text-center py-4 text-xs text-slate-500 border-t border-slate-800">
-        Plateforme de Révision • Réalisé par Bleziri
+    <footer>
+        <div class="wrap">Réalisé par Bleziri</div>
     </footer>
 
-    <!-- MODAL IA -->
-    <div id="aiModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl p-6 shadow-2xl relative">
-            <button onclick="closeAIModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
-            
-            <div class="flex items-center gap-3 mb-4">
-                <div class="p-2.5 bg-purple-500/20 text-purple-400 rounded-xl border border-purple-500/30">
-                    <i class="fa-solid fa-wand-magic-sparkles text-xl"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-white">Générateur IA</h3>
-                    <p class="text-xs text-slate-400">Crée un quiz sur le sujet de ton choix</p>
-                </div>
-            </div>
-
-            <div class="space-y-4 text-sm">
-                <div>
-                    <label class="block text-slate-300 font-medium mb-1">Sujet <span class="text-slate-500 font-normal">(optionnel si tu importes un PDF)</span></label>
-                    <textarea id="aiPromptInput" rows="3" maxlength="300" placeholder="Ex : la mitose, les organites, la membrane plasmique..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 resize-none"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-slate-300 font-medium mb-1">Importer un cours en PDF <span class="text-slate-500 font-normal">(optionnel)</span></label>
-                    <input id="pdfInput" type="file" accept="application/pdf,.pdf" onchange="handlePdfSelect(this)" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-700 file:text-slate-200 hover:file:bg-slate-600">
-                    <div id="pdfBox" class="hidden mt-2 space-y-2">
-                        <div class="flex items-center gap-2 text-xs text-slate-300">
-                            <span>Pages</span>
-                            <input id="pdfFrom" type="number" min="1" onchange="readPdfRange()" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
-                            <span>à</span>
-                            <input id="pdfTo" type="number" min="1" onchange="readPdfRange()" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
-                            <button onclick="clearPdf()" class="ml-auto text-slate-400 hover:text-white underline underline-offset-2">Retirer</button>
-                        </div>
-                        <p id="pdfInfo" class="text-xs text-slate-400"></p>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-slate-300 font-medium mb-1">Nombre de questions</label>
-                    <select id="aiCount" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-slate-200">
-                        <option value="5">5</option>
-                        <option value="10" selected>10</option>
-                        <option value="15">15</option>
-                        <option value="20">20</option>
-                    </select>
-                </div>
-
-                <p id="aiError" class="hidden text-rose-300 text-xs bg-rose-950/40 border border-rose-500/30 rounded-xl px-3 py-2"></p>
-
-                <button onclick="generateAIQuiz()" id="aiSubmitBtn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-bolt"></i> Générer
-                </button>
-
-                <button onclick="resetDefaultQuestions()" class="w-full text-slate-400 hover:text-white text-xs underline underline-offset-2 transition">
-                    Revenir aux questions par défaut
-                </button>
+    <dialog id="leaveDialog" aria-labelledby="leaveTitle">
+        <div class="dlg">
+            <h2 id="leaveTitle">Quitter ce quiz ?</h2>
+            <p class="lead">Ta progression sur ce quiz sera perdue.</p>
+            <div class="stack two">
+                <button class="btn btn-primary" id="leaveStay" type="button" style="margin-top:0">Rester</button>
+                <button class="btn" id="leaveGo" type="button">Quitter</button>
             </div>
         </div>
-    </div>
+    </dialog>
 
-    <!-- Lecteur PDF (extrait le texte dans le navigateur) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <dialog id="aiDialog" aria-labelledby="aiTitle">
+        <div class="dlg">
+            <div class="dlg-head">
+                <div>
+                    <h2 id="aiTitle">Créer un quiz avec l'IA</h2>
+                    <p class="lead">Donne un sujet, un cours en PDF, ou les deux. L'IA écrit les questions.</p>
+                </div>
+                <button class="btn btn-quiet" id="aiClose" type="button" aria-label="Fermer" style="min-width:44px;padding:0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
 
-    <!-- Script Logic -->
+            <div class="field-group">
+                <label for="aiTopic">Sujet <span style="font-weight:400;color:var(--muted)">(facultatif si tu ajoutes un PDF)</span></label>
+                <textarea class="field" id="aiTopic" maxlength="300" placeholder="Exemple : la structure du noyau"></textarea>
+            </div>
+
+            <div class="field-group">
+                <label for="aiPdf">Cours en PDF <span style="font-weight:400;color:var(--muted)">(facultatif)</span></label>
+                <input class="field" id="aiPdf" type="file" accept="application/pdf,.pdf">
+                <div id="pdfBox" hidden>
+                    <div class="range">
+                        <span>Pages</span>
+                        <input class="field" id="pdfFrom" type="number" min="1" inputmode="numeric" aria-label="Première page">
+                        <span>à</span>
+                        <input class="field" id="pdfTo" type="number" min="1" inputmode="numeric" aria-label="Dernière page">
+                        <button class="btn btn-quiet" id="pdfClear" type="button" style="margin-left:auto;min-height:40px">Retirer</button>
+                    </div>
+                    <small id="pdfInfo" aria-live="polite"></small>
+                </div>
+                <small>Les 3 à 4 premières pages de la sélection sont lues. Les PDF scannés (images) ne fonctionnent pas.</small>
+            </div>
+
+            <div class="field-group">
+                <label for="aiCount">Nombre de questions</label>
+                <select class="field" id="aiCount">
+                    <option value="5">5 questions</option>
+                    <option value="10" selected>10 questions</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="aiCode">Code d'accès</label>
+                <input class="field" id="aiCode" type="password" autocomplete="off" placeholder="Code donné par ton groupe">
+            </div>
+
+            <p class="error" id="aiError" role="alert" hidden></p>
+            <button class="btn btn-primary btn-block" id="aiSubmit" type="button">Créer le quiz</button>
+        </div>
+    </dialog>
+
     <script>
-        const defaultQuestions = [
+'use strict';
+
+const Q = (question, good, bad, explanation) => ({ question, options: [good, ...bad], answer: 0, explanation });
+
+const defaultQuestions = [
             { question: "En 1665, Robert Hooke a employé pour la première fois le terme de cellule. Sur quel échantillon ?", options: ["Des alvéoles issues de coupes de tissu de liège mort", "Des bactéries", "Des cellules sanguines", "Des feuilles d'élodée"], answer: 0, explanation: "Robert Hooke a observé des alvéoles vides dans du liège mort au microscope." },
             { question: "Quelle innovation a permis à Leeuwenhoek d'observer des animalcules avec un grossissement x300 ?", options: ["L'association de deux lentilles optiques", "Le polissage minutieux de très petites lentilles monoculaires", "L'utilisation d'un condenseur", "Les colorants"], answer: 1, explanation: "Il taillait des lentilles uniques de très forte courbure." },
             { question: "En quelle année l'existence de micro-organismes vivants a-t-elle été reconnue par Leeuwenhoek ?", options: ["1665", "1677", "1838", "1855"], answer: 1, explanation: "C'est en 1677 qu'il communique ses travaux à la Royal Society." },
@@ -247,379 +395,749 @@
             { question: "Pourquoi ne faut-il pas confondre paroi végétale et membrane plasmique ?", options: ["La paroi est une enveloppe externe rigide ; la membrane est la bicouche lipidique interne", "La paroi est dans le noyau", "La membrane est en bois", "La paroi existe chez les animaux"], answer: 0, explanation: "La paroi entoure la membrane plasmique." }
         ];
 
-        let quizQuestions = [...defaultQuestions];
-        let currentQuestionIndex = 0;
-        let score = 0;
-        let answered = false;
+const mitoseQuestions = [
+            { question: "Pendant quelle phase du cycle cellulaire l'ADN est-il répliqué ?", options: ["La phase G1", "La phase S", "La phase G2", "La phase M"], answer: 1, explanation: "S signifie synthèse : l'ADN est doublé avant la division." },
+            { question: "Quelle est en général la phase la plus longue du cycle cellulaire ?", options: ["La mitose", "L'interphase", "La cytodièse", "L'anaphase"], answer: 1, explanation: "L'interphase regroupe G1, S et G2 et dure bien plus longtemps que la mitose." },
+            { question: "Quel est l'ordre correct des phases de la mitose ?", options: ["Prophase, métaphase, anaphase, télophase", "Métaphase, prophase, télophase, anaphase", "Anaphase, prophase, métaphase, télophase", "Télophase, anaphase, métaphase, prophase"], answer: 0, explanation: "Moyen mnémotechnique : PMAT." },
+            { question: "Que se passe-t-il pendant la métaphase ?", options: ["Les chromosomes s'alignent sur la plaque équatoriale", "Les chromatides se séparent", "L'enveloppe nucléaire se reforme", "L'ADN est répliqué"], answer: 0, explanation: "Les chromosomes sont maximalement condensés et alignés au centre de la cellule." },
+            { question: "Quel événement caractérise l'anaphase ?", options: ["Les chromatides sœurs se séparent et migrent vers les pôles", "Les chromosomes se condensent pour la première fois", "La cellule double son ADN", "Les nucléoles apparaissent"], answer: 0, explanation: "Chaque pôle reçoit un lot complet de chromosomes." },
+            { question: "Quel est le résultat d'une mitose ?", options: ["Deux cellules filles génétiquement identiques à la cellule mère", "Quatre cellules haploïdes", "Deux cellules avec la moitié des chromosomes", "Une cellule à double noyau"], answer: 0, explanation: "La mitose conserve le nombre de chromosomes et l'information génétique." },
+            { question: "De quoi est constitué le fuseau mitotique ?", options: ["De microtubules", "De filaments intermédiaires de kératine", "De membranes du réticulum", "De cellulose"], answer: 0, explanation: "Les microtubules, organisés par les centrosomes, tirent les chromosomes vers les pôles." },
+            { question: "Comment se déroule la cytodièse chez une cellule animale ?", options: ["Par un étranglement du cytoplasme grâce à un anneau contractile", "Par la formation d'une plaque cellulaire", "Par l'éclatement de la membrane", "Par la fusion de deux noyaux"], answer: 0, explanation: "Chez les cellules végétales, c'est une plaque cellulaire qui se forme à la place." },
+            { question: "Quel est le résultat d'une méiose complète à partir d'une cellule diploïde ?", options: ["Quatre cellules haploïdes", "Deux cellules diploïdes identiques", "Une seule cellule haploïde", "Deux cellules haploïdes identiques"], answer: 0, explanation: "La méiose comprend deux divisions successives et produit les gamètes." },
+            { question: "Une cellule humaine possède 46 chromosomes. Combien en aura chaque cellule fille après une mitose ?", options: ["23", "46", "92", "12"], answer: 1, explanation: "La mitose conserve le nombre de chromosomes : 46 dans chaque cellule fille." }
+        ];
 
-        const $ = (id) => document.getElementById(id);
-        const introCard = $('introCard');
-        const quizCard = $('quizCard');
-        const resultCard = $('resultCard');
-        const aiModal = $('aiModal');
-        const totalQuestionsCount = $('totalQuestionsCount');
-        const introCount = $('introCount');
-        const questionProgressText = $('questionProgressText');
-        const scoreText = $('scoreText');
-        const progressBar = $('progressBar');
-        const questionTitle = $('questionTitle');
-        const optionsContainer = $('optionsContainer');
-        const explanationBox = $('explanationBox');
-        const nextBtn = $('nextBtn');
-        const aiError = $('aiError');
+const rc1 = [
+Q("Que signifie le mot « biologie » d'après son étymologie ?", "Bios = vivant et logos = étude", ["Bios = cellule et logos = étude", "Cyto = vivant et logos = science", "Bios = noyau et logos = forme"], "La biologie a pour objet l'étude des êtres vivants."),
+Q("De quelles racines le mot « cytologie » est-il formé ?", "Cyto (cellule) et logos (étude)", ["Cyto (noyau) et logos (étude)", "Cyto (vivant) et bios (cellule)", "Cyto (liège) et logos (forme)"], "Le mot est composé de deux racines étymologiques différentes."),
+Q("Comment définit-on la biologie cellulaire (cytologie) ?", "L'étude des cellules et des organites qu'elles renferment", ["L'étude des seuls micro-organismes", "L'étude des tissus et des organes uniquement", "L'étude de la classification des espèces"], "Elle étudie la cellule et ses organites."),
+Q("Quels aspects de la cellule la biologie cellulaire étudie-t-elle ?", "La morphologie, la biochimie et la physiologie", ["La taille, la couleur et la forme seulement", "L'anatomie, l'histoire et la géologie", "La génétique des populations et l'écologie"], "Il s'agit de comprendre les phénomènes et mécanismes qui assurent la vie et sa pérennité."),
+Q("Quel problème fondamental les biologistes ont-ils rencontré pour étudier les cellules ?", "Leur petite taille, qui ne permet pas de les observer à l'œil nu", ["Leur couleur trop foncée", "Leur rareté dans la nature", "Leur absence de noyau"], "Les connaissances ont progressé grâce aux microscopes de plus en plus perfectionnés."),
+Q("À quoi le développement de la cytologie est-il lié ?", "Aux progrès techniques accomplis dans le domaine de l'optique", ["Aux progrès de l'agriculture", "À la découverte de l'ADN uniquement", "Aux progrès de la chirurgie"], "Instruments d'observation et techniques appropriées ont fait avancer la cytologie."),
+Q("Jusqu'à quelle année l'existence des micro-organismes a-t-elle été niée ?", "1677", ["1665", "1838", "1955"], "Ils furent vus et décrits en 1677 par van Leeuwenhoek."),
+Q("Qui a décrit les micro-organismes en 1677 ?", "Antonie van Leeuwenhoek", ["Robert Hooke", "Matthias Schleiden", "Rudolf Virchow"], "Il a décrit un monde auparavant invisible."),
+Q("Quelle était la profession de van Leeuwenhoek ?", "Drapier (marchand de draps) à Delft, aux Pays-Bas", ["Professeur de géométrie à Gresham college", "Botaniste allemand", "Zoologiste allemand"], "Il examinait les fibres des textiles qu'il achetait."),
+Q("Quelle formation scientifique van Leeuwenhoek avait-il au départ ?", "Aucune, mais une grande patience et une grande curiosité", ["Une formation de médecin", "Un doctorat de physique", "Une formation de chimiste"], "Il n'était au départ qu'un artisan habile dans la fabrication de lentilles."),
+Q("Quel microscope van Leeuwenhoek utilisait-il ?", "Un microscope simple composé d'une seule petite lentille presque sphérique", ["Un microscope composé à plusieurs lentilles", "Un microscope électronique", "Un microscope à deux lentilles plates"], "Ses lentilles étaient de grande qualité."),
+Q("Quels grossissements ses microscopes permettaient-ils ?", "De 50 à 300 fois", ["De 5 à 30 fois", "De 1 000 à 2 000 fois", "Jusqu'à 100 000 fois"], "Il a obtenu de forts grossissements (300 X)."),
+Q("Comment van Leeuwenhoek appelait-il les êtres qu'il observait dans l'eau ?", "Des animalcules", ["Des cellules", "Des alvéoles", "Des homuncules"], "Il les observait dans une goutte d'eau provenant d'un étang."),
+Q("Que sont les « animalcules » reconnus aujourd'hui ?", "Des bactéries et des protozoaires", ["Des cellules de liège", "Des virus uniquement", "Des spermatozoïdes"], "Ils étaient mobiles, ce qui montrait qu'ils étaient vivants."),
+Q("Qu'est-ce qui montrait que les animalcules étaient vivants ?", "Leur mobilité", ["Leur couleur", "Leur taille", "Leur forme sphérique"], "Van Leeuwenhoek décrivait ainsi un monde nouveau."),
+Q("Dans quelles cellules van Leeuwenhoek a-t-il observé pour la première fois des noyaux de cellules vivantes ?", "Dans les hématies de saumon", ["Dans les cellules de liège", "Dans les neurones", "Dans les cellules de l'épiderme d'oignon"], "Il a aussi réalisé de nombreuses observations de spermatozoïdes."),
+Q("Qu'est-ce que l'homuncule ?", "L'idée que le spermatozoïde contient l'être vivant entièrement formé, en miniature", ["Un animalcule bactérien", "Un organite de la cellule", "Une cavité observée dans le liège"], "Dans l'espèce humaine, on parle de l'homuncule."),
+Q("Quelle importance le modèle de l'homuncule accordait-il à l'ovocyte ?", "Aucune", ["Une importance principale", "Une importance égale à celle du spermatozoïde", "Un rôle de transport uniquement"], "Ce modèle ne reconnaît aucune importance à l'ovocyte."),
+Q("En quelle année Robert Hooke a-t-il utilisé le mot « cellule » ?", "1665", ["1677", "1838", "1855"], "C'est donc bien Hooke l'inventeur du terme « cellule »."),
+Q("Quelle était la profession de Robert Hooke au moment de ses observations ?", "Professeur de géométrie à Gresham college", ["Drapier à Delft", "Botaniste allemand", "Zoologiste allemand"], "Hooke était aussi chimiste, mathématicien, physicien et inventeur anglais."),
+Q("Sur quel échantillon Hooke a-t-il observé les premières cellules ?", "De fines coupes de liège", ["Une goutte d'eau d'étang", "Des hématies de saumon", "Du sang humain"], "Il utilisait un microscope perfectionné."),
+Q("Qu'a observé Hooke dans le liège ?", "Des cavités séparées par des cloisons", ["Des noyaux", "Des bactéries mobiles", "Des chloroplastes"], "Il a nommé « cell » ces alvéoles."),
+Q("Que Hooke avait-il réellement observé dans le liège ?", "Des parois cellulaires de cellules mortes", ["Des cellules vivantes avec leur noyau", "Des bactéries", "Des spermatozoïdes"], "Les cellules constitutives de l'écorce sont des cellules mortes."),
+Q("Quelle conclusion erronée Hooke a-t-il tirée en observant un liquide dans certaines cellules ?", "Que les cellules des plantes servent au transport de substances", ["Que toute cellule provient d'une autre cellule", "Que les spermatozoïdes contiennent un être en miniature", "Que tous les tissus sont faits de cellules animales"], "Il avait aussi décrit des structures similaires chez d'autres végétaux."),
+Q("Quand un microscope optique composé efficace a-t-il rendu l'étude des bactéries réellement accessible ?", "Vers les années 1825", ["En 1665", "En 1677", "En 1955"], "Il s'agit d'un microscope multi-lentilles."),
+Q("Qu'est-ce qu'un microscope optique composé ?", "Un microscope à plusieurs lentilles (multi-lentilles)", ["Un microscope à une seule lentille", "Un microscope utilisant des électrons", "Un microscope sans lumière"], "Celui de van Leeuwenhoek n'avait qu'une seule lentille."),
+Q("Quand la biologie cellulaire est-elle née, d'après le cours ?", "En 1955, environ trois siècles après les travaux de Hooke et van Leeuwenhoek", ["En 1665", "En 1838", "En 1677"], "La microscopie est devenue l'une des principales techniques d'étude de la matière vivante."),
+Q("Qui a suggéré en 1838 que tous les tissus végétaux sont faits de cellules ?", "Matthias Schleiden, un botaniste allemand", ["Théodore Schwann", "Rudolf Virchow", "Robert Hooke"], "Cette idée a été étendue aux animaux un an plus tard."),
+Q("Qui a étendu cette hypothèse aux animaux en 1839 ?", "Théodore Schwann, un zoologiste", ["Matthias Schleiden", "Rudolf Virchow", "Robert Hooke"], "Il arrive à la même hypothèse que Schleiden pour les animaux."),
+Q("Que suggère Rudolf Virchow en 1855 ?", "Que toute cellule provient d'une autre cellule préexistante", ["Que tous les tissus végétaux sont faits de cellules", "Que tous les animaux sont faits de cellules", "Que les cellules naissent de la matière inerte"], "Cette idée est le troisième aspect de la théorie cellulaire."),
+Q("Combien de grands aspects la théorie cellulaire comporte-t-elle ?", "Trois", ["Deux", "Cinq", "Sept"], "Les contributions de Schleiden, Schwann et Virchow l'ont fondée."),
+Q("Quel est le premier aspect de la théorie cellulaire ?", "La cellule est la plus petite entité vivante et l'unité fonctionnelle des organismes vivants", ["Toute cellule provient d'une autre cellule", "Tout tissu est fait d'organes", "La cellule n'existe que chez les plantes"], "Les deux autres : tout être vivant est composé de cellules ; toute cellule provient d'une autre cellule."),
+Q("Quel est le deuxième aspect de la théorie cellulaire ?", "Tout être vivant est composé de cellules", ["La cellule est dépourvue d'organites", "Toute cellule provient de la matière non vivante", "Seuls les animaux sont faits de cellules"], "Il s'applique aux êtres vivants en général."),
+Q("Par quoi un tissu est-il caractérisé ?", "Une structure et une fonction communes à ses cellules", ["Un noyau unique et une paroi", "Une seule cellule géante", "Une membrane et un cytosquelette communs"], "Dans les organismes pluricellulaires, les cellules sont organisées en tissus."),
+Q("Quel est l'ordre d'organisation du vivant, du plus simple au plus complexe ?", "Atomes, molécules, organites, cellules, tissus, organes, systèmes, organisme", ["Atomes, organites, molécules, cellules, organes, tissus, organisme", "Molécules, atomes, cellules, organites, tissus, systèmes, organes", "Cellules, atomes, molécules, tissus, organites, organes, systèmes"], "Chaque niveau s'édifie à partir du niveau inférieur."),
+Q("Qu'est-ce qu'un organite ?", "Une structure fonctionnelle formée de molécules complexes, composant de la cellule", ["Un ensemble de cellules semblables", "Un ensemble d'organes", "Un atome complexe"], "Les molécules complexes forment des organites."),
+Q("Que forment des organes qui s'associent ?", "Un système, pour assurer une fonction précise", ["Un tissu", "Un organite", "Une cellule"], "Les systèmes permettent la survie d'un organisme."),
+Q("À partir de quels atomes les premières molécules organiques se sont-elles formées ?", "Le carbone, l'hydrogène et l'oxygène", ["L'azote, le soufre et le fer", "Le calcium, le sodium et le potassium", "L'hélium, le néon et l'argon"], "Le monde vivant résulte de processus évolutifs débutés il y a quelques milliards d'années."),
+Q("Pourquoi la cellule occupe-t-elle une place privilégiée dans la hiérarchie du vivant ?", "Elle peut assurer toutes les activités liées à la vie, dont la croissance et la reproduction", ["Elle est le plus grand niveau d'organisation", "Elle contient tous les organes", "Elle est indépendante de son environnement"], "Un assemblage judicieux et la capacité de communiquer ont abouti à la première cellule."),
+Q("Une cellule vit-elle isolée de son environnement ?", "Non : elle interagit continuellement avec lui", ["Oui, elle en est totalement indépendante", "Oui, mais seulement chez les bactéries", "Non, car elle contient des organes"], "Une cellule n'existe pas seule."),
+Q("Que désigne l'homéostasie ?", "La faculté de se maintenir dans des limites raisonnables de survie", ["La capacité de se reproduire rapidement", "La production d'ATP uniquement", "La capacité de se déplacer"], "C'est l'une des caractéristiques de la vie."),
+Q("Parmi ces propositions, laquelle est une caractéristique de la vie ?", "La capacité de se reproduire", ["La présence d'une paroi", "La présence d'un noyau", "La capacité de réaliser la photosynthèse"], "Autres caractéristiques : croissance et développement, énergie, adaptation et évolution, homéostasie."),
+Q("Sur quels critères les biologistes répartissent-ils les êtres vivants en groupes ?", "Leur anatomie, leur mode de vie et leur histoire évolutive", ["Leur couleur et leur taille uniquement", "Le nombre de leurs cellules uniquement", "Leur lieu de naissance"], "Plus les espèces sont proches sur le plan de l'évolution, plus elles sont proches dans la classification."),
+Q("Quelle est l'unité de base de la classification du monde vivant ?", "L'espèce", ["Le genre", "La famille", "Le règne"], "Les espèces sont réunies dans des genres."),
+Q("Comment s'élève la pyramide de la classification ?", "Espèces, genres, familles, ordres, classes, embranchements, règnes", ["Genres, espèces, ordres, familles, embranchements, classes, règnes", "Règnes, classes, ordres, genres, familles, espèces", "Espèces, familles, genres, classes, ordres, règnes, embranchements"], "Un règne rassemble des espèces très différentes les unes des autres."),
+Q("Les noms scientifiques des espèces sont-ils les mêmes dans tous les pays ?", "Oui : la classification des espèces est un système international", ["Non, chaque pays a ses propres noms scientifiques", "Non, ils changent selon la langue", "Oui, mais seulement en Europe"], "Les noms des espèces, genres, familles... sont les mêmes dans le monde entier."),
+Q("En combien de règnes le monde vivant est-il classiquement divisé ?", "Cinq", ["Deux", "Trois", "Huit"], "Animaux, végétaux, champignons, protistes et procaryotes."),
+Q("Quels sont les cinq règnes ?", "Les animaux, les végétaux, les champignons, les protistes et les procaryotes", ["Les animaux, les végétaux, les minéraux, les virus et les bactéries", "Les animaux, les végétaux, les algues, les virus et les prions", "Les eucaryotes, les eubactéries, les archéobactéries, les virus et les prions"], "Les procaryotes sont les bactéries."),
+Q("Quels éléments communs toutes les cellules possèdent-elles ?", "Un cytoplasme entouré d'une membrane et un génome à base d'ADN", ["Un noyau et une paroi", "Des mitochondries et des chloroplastes", "Un cytosquelette et un appareil de Golgi"], "Malgré ces ressemblances, il existe des différences fondamentales d'architecture."),
+Q("Combien de types de bases d'organisation cellulaire distingue-t-on ?", "Deux : procaryotes et eucaryotes", ["Un seul", "Trois, tous intermédiaires", "Cinq"], "Ces types sont disjoints, sans intermédiaire entre eux.")
+];
 
-        function updateCounts() {
-            totalQuestionsCount.textContent = quizQuestions.length;
-            introCount.textContent = quizQuestions.length;
+const rc2 = [
+Q("Laquelle de ces affirmations sur van Leeuwenhoek est FAUSSE ?", "Il était professeur de géométrie à Gresham college", ["Il était drapier à Delft", "Il a observé des noyaux dans des hématies de saumon", "Son microscope comportait une seule petite lentille"], "C'est Robert Hooke qui était professeur de géométrie à Gresham college."),
+Q("Laquelle de ces affirmations sur Robert Hooke est FAUSSE ?", "Il a observé des cellules vivantes munies d'un noyau dans le liège", ["Il a employé le mot « cell » en 1665", "Il a observé des parois de cellules mortes", "Il a observé de fines coupes de liège"], "Il n'a observé que des parois cellulaires : les cellules du liège sont mortes."),
+Q("Laquelle de ces affirmations sur la théorie cellulaire est FAUSSE ?", "Schwann a proposé en 1838 que tous les tissus végétaux sont faits de cellules", ["Schleiden a proposé en 1838 que tous les tissus végétaux sont faits de cellules", "Schwann a étendu l'hypothèse aux animaux en 1839", "Virchow a suggéré en 1855 que toute cellule provient d'une cellule préexistante"], "C'est Schleiden, botaniste, qui a proposé cela en 1838 ; Schwann est zoologiste."),
+Q("Quel scientifique N'est PAS associé à la théorie cellulaire ?", "Antonie van Leeuwenhoek", ["Matthias Schleiden", "Théodore Schwann", "Rudolf Virchow"], "Schleiden, Schwann et Virchow ont mené à la théorie cellulaire."),
+Q("Laquelle de ces affirmations sur le tissu est FAUSSE ?", "Un tissu est un ensemble de cellules aux fonctions toutes différentes", ["Un tissu est un ensemble de cellules caractérisées par une structure", "Les cellules d'un tissu ont une fonction commune", "Dans les organismes pluricellulaires, les cellules sont organisées en tissus"], "Les cellules d'un tissu ont une structure et une fonction communes."),
+Q("Quel élément N'est PAS un niveau d'organisation structurale du vivant ?", "Le règne", ["L'organite", "Le tissu", "Le système"], "Le règne est un rang de classification, pas un niveau d'organisation structurale."),
+Q("Laquelle de ces propositions N'est PAS une caractéristique de la vie citée dans le cours ?", "La présence d'un noyau", ["La capacité de se reproduire", "La croissance et le développement", "L'homéostasie"], "Les procaryotes sont vivants sans noyau."),
+Q("Laquelle de ces affirmations sur la classification est FAUSSE ?", "Le règne est l'unité de base de la classification", ["L'espèce est l'unité de base", "Les noms scientifiques sont les mêmes dans le monde entier", "Plus deux espèces sont proches sur le plan de l'évolution, plus elles sont proches dans la classification"], "L'unité de base est l'espèce."),
+Q("Quel niveau N'appartient PAS à la pyramide de la classification ?", "Le tissu", ["La famille", "L'ordre", "L'embranchement"], "Le tissu est un niveau d'organisation structurale."),
+Q("Lequel de ces groupes N'est PAS un des cinq règnes ?", "Les minéraux", ["Les champignons", "Les protistes", "Les animaux"], "Les minéraux figuraient dans l'ancienne division en trois règnes."),
+Q("Lequel de ces règnes faisait partie de l'ancienne division en trois règnes ?", "Le règne minéral", ["Les champignons", "Les protistes", "Les procaryotes"], "Les trois règnes d'autrefois étaient animal, végétal et minéral."),
+Q("Laquelle de ces affirmations sur les champignons est FAUSSE ?", "Leurs parois sont constituées de lignine et de cellulose", ["Ils sont dépourvus de chlorophylle", "Leur appareil végétatif est de type mycélien", "Ils se nourrissent de matières organiques"], "Leurs parois sont constituées de chitine, comme la cuticule des insectes."),
+Q("Laquelle de ces affirmations sur les types cellulaires est FAUSSE ?", "Il existe des organismes intermédiaires entre les procaryotes et les eucaryotes", ["Toutes les cellules ont un cytoplasme entouré d'une membrane", "Toutes contiennent un génome à base d'ADN", "Il existe deux types de bases d'organisation cellulaire"], "Ces types sont disjoints : il n'y a aucun intermédiaire entre eux."),
+Q("Laquelle de ces affirmations sur les trois domaines est FAUSSE ?", "Ils sont fondés sur le mode de nutrition autotrophe ou hétérotrophe", ["Ils ont été proposés par Woese en 1990", "Ils sont : eucaryotes, eubactéries et archéobactéries", "Ils sont basés sur la structure cellulaire"], "Ils reposent sur la structure cellulaire."),
+Q("Laquelle de ces affirmations sur les protistes est FAUSSE ?", "Ce sont des eucaryotes pluricellulaires hétérotrophes", ["Ce sont des eucaryotes unicellulaires", "Haeckel les a regroupés en un nouveau règne", "Copeland en a séparé les monères"], "Les protistes sont des eucaryotes unicellulaires."),
+Q("Quelle est la contribution de Haeckel à la classification ?", "Il regroupe les unicellulaires dans un nouveau règne, les protistes", ["Il sépare les champignons des végétaux", "Il propose trois domaines du vivant", "Il sépare les procaryotes des protistes"], "Il estime que la répartition entre végétaux et animaux est inadaptée."),
+Q("Quelle est la contribution de Copeland, en 1938 ?", "Il sépare le règne des monères (procaryotes) des protistes", ["Il crée le règne des champignons", "Il propose les trois domaines", "Il regroupe les algues pluricellulaires avec les protistes"], "Il en résulte une classification en 4 règnes."),
+Q("Quelle est la contribution de Whittaker, en 1969 ?", "Il sépare les champignons des végétaux et crée le règne des fongidés", ["Il regroupe les unicellulaires dans les protistes", "Il sépare les monères des protistes", "Il propose les trois domaines"], "Cela conduit à une classification en 5 règnes."),
+Q("Quelle est la contribution de Margulis ?", "Elle sépare les algues pluricellulaires des végétaux et les regroupe avec les protistes", ["Elle crée le règne des fongidés", "Elle sépare les monères des protistes", "Elle crée les domaines eubactéries et archéobactéries"], "L'ensemble est renommé Proctociste."),
+Q("Quelle est la contribution de Woese en 1990 ?", "Il propose de diviser le monde vivant en 3 domaines basés sur la structure cellulaire", ["Il crée le règne des monères", "Il sépare les champignons des végétaux", "Il regroupe les unicellulaires en protistes"], "Eubactéries, archéobactéries et eucaryotes."),
+Q("Quelle découverte doit-on à van Leeuwenhoek dans les hématies de saumon ?", "L'observation de noyaux de cellules vivantes", ["La première observation de cellules mortes", "La découverte des chloroplastes", "La découverte des cloisons du liège"], "Il fut le premier à observer des noyaux de cellules vivantes."),
+Q("Combien de règnes Haeckel proposait-il d'après le tableau du cours ?", "Trois", ["Quatre", "Cinq", "Six"], "Animal, végétal et protistes."),
+Q("Combien de règnes Copeland proposait-il d'après le tableau du cours ?", "Quatre", ["Trois", "Cinq", "Six"], "Animal, végétal, protistes et monères."),
+Q("Combien de règnes Whittaker proposait-il d'après le tableau du cours ?", "Cinq", ["Trois", "Quatre", "Six"], "Animal, végétal, fongides, protistes et monères."),
+Q("Quel est l'ordre chronologique correct de ces événements ?", "Hooke (1665), van Leeuwenhoek (1677), Schleiden (1838), Virchow (1855)", ["Van Leeuwenhoek, Hooke, Virchow, Schleiden", "Schleiden, Hooke, Virchow, van Leeuwenhoek", "Virchow, Schleiden, van Leeuwenhoek, Hooke"], "Les dates sont : 1665, 1677, 1838 et 1855."),
+Q("Quel est l'ordre chronologique correct des classifications ?", "Haeckel, Copeland, Whittaker, puis les trois domaines de Woese", ["Whittaker, Haeckel, Copeland, Woese", "Woese, Whittaker, Copeland, Haeckel", "Copeland, Haeckel, Woese, Whittaker"], "Du plus ancien au plus récent : 3, 4, 5 règnes puis 3 domaines."),
+Q("Pourquoi les bactéries étaient-elles classées parmi les végétaux ?", "Parce que les unicellulaires étaient répartis entre végétaux et animaux selon l'autotrophie ou l'hétérotrophie", ["Parce qu'elles réalisent toutes la photosynthèse", "Parce qu'elles ont un noyau", "Parce qu'elles sont pluricellulaires"], "La classification reposait alors sur ces deux modes de nutrition."),
+Q("Qu'a permis de découvrir la microscopie électronique, d'après le cours ?", "La différence fondamentale entre les bactéries et les autres cellules", ["L'existence du liège", "La première cellule animale", "Le mot « cellule »"], "Cela a abouti à séparer les monères des protistes."),
+Q("Pourquoi les champignons forment-ils un règne à part entière ?", "Appareil mycélien sans racines ni tiges ni feuilles, absence de chlorophylle et parois de chitine", ["Ils sont photosynthétiques et ont des racines", "Ils sont unicellulaires et sans noyau", "Ils ont des parois de cellulose et de lignine"], "Ils se nourrissent de matières organiques."),
+Q("De quoi est constituée la paroi des champignons ?", "De chitine, comme la cuticule des insectes", ["De lignine et de cellulose", "De peptidoglycane", "De collagène"], "Elle diffère de la paroi des végétaux."),
+Q("Pourquoi l'ancienne division du vivant en trois règnes était-elle inexacte ?", "Elle oubliait tout un pan de la vie tout en rattachant le monde non vivant au vivant", ["Elle comptait trop de règnes", "Elle ignorait les plantes", "Elle reposait sur l'ADN"], "Elle était basée sur ce qui est visible à l'œil nu."),
+Q("Sur quoi l'ancienne division en trois règnes reposait-elle ?", "Sur ce qui est visible à l'œil nu", ["Sur la structure cellulaire", "Sur l'analyse de l'ARN", "Sur le microscope électronique"], "Elle oubliait les organismes invisibles à l'œil nu."),
+Q("Qu'est-ce qui a permis de diviser les procaryotes en deux groupes ?", "Les progrès de la biologie moléculaire", ["Le microscope optique composé", "La découverte des cellules au XVIIe siècle", "La théorie cellulaire"], "Il s'agit des eubactéries et des archéobactéries."),
+Q("Quels sont les deux groupes de procaryotes ?", "Les eubactéries et les archéobactéries", ["Les protistes et les champignons", "Les animaux et les végétaux", "Les virus et les prions"], "Ils sont aussi fondamentalement différents l'un de l'autre."),
+Q("Que sont les champignons ?", "Des eucaryotes pluricellulaires hétérotrophes qui décomposent", ["Des eucaryotes unicellulaires", "Des eucaryotes pluricellulaires photosynthétiques", "Des procaryotes sans noyau"], "Ils se nourrissent de matières organiques."),
+Q("Que sont les végétaux ?", "Des eucaryotes pluricellulaires qui réalisent la photosynthèse", ["Des eucaryotes unicellulaires hétérotrophes", "Des procaryotes sans noyau", "Des eucaryotes pluricellulaires qui ingèrent"], "Les animaux, eux, ingèrent."),
+Q("Que sont les animaux ?", "Des eucaryotes pluricellulaires hétérotrophes qui ingèrent", ["Des eucaryotes pluricellulaires qui décomposent", "Des eucaryotes unicellulaires", "Des procaryotes sans noyau"], "Ils se distinguent des champignons par l'ingestion."),
+Q("Que sont les protistes ?", "Des eucaryotes unicellulaires", ["Des eucaryotes pluricellulaires photosynthétiques", "Des procaryotes sans noyau", "Des eucaryotes pluricellulaires qui décomposent"], "Ils furent regroupés par Haeckel."),
+Q("Que sont les procaryotes ?", "Des organismes dépourvus de noyau, bactéries et archéobactéries", ["Des eucaryotes unicellulaires à noyau", "Des organismes pluricellulaires à noyau", "Des champignons mycéliens"], "Ils sont dépourvus de noyau."),
+Q("Quels organismes Margulis a-t-elle regroupés avec les protistes ?", "Les algues pluricellulaires, séparées des végétaux", ["Les champignons", "Les bactéries", "Les animaux"], "L'ensemble est renommé Proctociste."),
+Q("Combien de grands types cellulaires distinguait-on dans les années 70 ?", "Deux : les procaryotes et les eucaryotes", ["Un seul", "Trois : procaryotes, eucaryotes et virus", "Cinq"], "Les eucaryotes ont connu une évolution variée qui a généré 4 règnes."),
+Q("Un organisme unicellulaire sans noyau doit être classé parmi :", "Les procaryotes", ["Les protistes", "Les champignons", "Les végétaux"], "Les protistes sont des eucaryotes unicellulaires à noyau."),
+Q("Un organisme unicellulaire à noyau, ni animal ni végétal, est un :", "Protiste", ["Procaryote", "Champignon", "Animal"], "Les protistes sont des eucaryotes unicellulaires."),
+Q("Un eucaryote pluricellulaire à filaments mycéliens et sans chlorophylle est un :", "Champignon", ["Végétal", "Protiste", "Procaryote"], "Il se nourrit de matières organiques."),
+Q("Un eucaryote pluricellulaire qui réalise la photosynthèse est un :", "Végétal", ["Animal", "Champignon", "Protiste"], "Les animaux ingèrent, les champignons décomposent."),
+Q("Si deux espèces appartiennent à la même famille, elles appartiennent forcément au même :", "Ordre", ["Genre", "Espèce", "Aucun autre rang"], "Les familles sont groupées en ordres."),
+Q("Quelle différence existe entre le microscope de van Leeuwenhoek et un microscope composé ?", "Le premier n'a qu'une seule lentille, le second en a plusieurs", ["Le premier est électronique, le second optique", "Le premier est plus puissant que le second", "Il n'y a aucune différence"], "Un microscope composé efficace apparaît vers les années 1825."),
+Q("Dans la hiérarchie du vivant, quel niveau suit les organites ?", "La cellule", ["Le tissu", "L'organe", "La molécule"], "Les organites sont les composants des cellules."),
+Q("Dans la hiérarchie du vivant, quel niveau suit les tissus ?", "Les organes", ["Les cellules", "Les organites", "Les molécules"], "Les tissus s'arrangent en organes."),
+Q("Qu'est-ce que les contributions de Schleiden, Schwann et Virchow ont permis ?", "L'établissement de la théorie cellulaire", ["La découverte des animalcules", "L'invention du microscope", "La classification en cinq règnes"], "Elles ont mené à la théorie cellulaire.")
+];
+
+/* =====================================================================
+   Organisation du site
+   ===================================================================== */
+const pick = (...idx) => idx.map(i => defaultQuestions[i]);
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+// Chapitres du cours (UE Biologie cellulaire et moléculaire).
+// `quizzes` : identifiants des quiz du chapitre. `soon` : chapitre pas encore disponible.
+const chapters = [
+    { n: 1, roman: 'I', title: "Introduction à la biologie cellulaire",
+      desc: "Définition de la cytologie, Hooke et van Leeuwenhoek, théorie cellulaire, organisation du vivant, classification.",
+      quizzes: ['c1-s1', 'c1-s2', 'c1-hasard'] },
+    { n: 2, roman: 'II', title: "Étude de la cellule eucaryote et de la cellule procaryote", soon: true },
+    { n: 3, roman: 'III', title: "Les virus", soon: true },
+    { n: 4, roman: 'IV', title: "Méthodes d'étude de la cellule", soon: true },
+    { n: 5, roman: 'V', title: "Étude des organites cellulaires", soon: true },
+    { n: 6, roman: 'VI', title: "Adhérence cellulaire et jonctions intercellulaires", soon: true }
+];
+
+// Registre de tous les quiz. `back` : où revenir. `count` : taille quand les questions sont tirées au hasard.
+const quizzes = {};
+const addQuiz = (q) => { quizzes[q.id] = q; };
+
+addQuiz({ id: 'depart', title: "Test tes capacités sur le début",
+    desc: "Mesure ton niveau de départ : histoire de la cellule, classification, organisation du vivant, métabolisme.",
+    questions: defaultQuestions, back: '#/' });
+
+addQuiz({ id: 'c1-s1', title: "Série 1 : le cours en détail",
+    desc: "Tout le chapitre : définitions, dates, auteurs, vivant et classification.",
+    questions: rc1, back: '#/chapitre/1' });
+addQuiz({ id: 'c1-s2', title: "Série 2 : façon examen",
+    desc: "Pièges d'examen : affirmations fausses, intrus, chronologies et cas pratiques.",
+    questions: rc2, back: '#/chapitre/1' });
+addQuiz({ id: 'c1-hasard', title: "Révision express",
+    desc: "Tirées au hasard dans les deux séries, différentes à chaque essai.",
+    questions: () => shuffle([...rc1, ...rc2]).slice(0, 30), count: 30, back: '#/chapitre/1' });
+
+const themes = [
+    { id: 't-histoire', title: "Histoire et théorie cellulaire", desc: "Hooke, Leeuwenhoek, Virchow et les postulats.", questions: pick(0, 1, 2, 3, 4, 5, 40) },
+    { id: 't-vivant', title: "Le vivant et son organisation", desc: "Définition du vivant, homéostasie, tissus et organes.", questions: pick(6, 7, 8, 9, 10, 11, 36) },
+    { id: 't-classif', title: "Classification du vivant", desc: "Règnes, domaines et pyramide taxonomique.", questions: pick(12, 13, 14, 15, 16, 41) },
+    { id: 't-procaryotes', title: "Procaryotes et eucaryotes", desc: "Différences majeures, bactéries et archéobactéries.", questions: pick(18, 19, 20, 21, 22, 37, 39) },
+    { id: 't-structure', title: "Structure de la cellule eucaryote", desc: "Membrane, paroi, noyau, ribosomes, Golgi et cytosol.", questions: pick(23, 24, 25, 26, 27, 28, 29, 30, 42, 43, 44) },
+    { id: 't-metabolisme', title: "Métabolisme et énergie", desc: "Catabolisme, anabolisme, ATP, enzymes et nutrition.", questions: pick(17, 31, 32, 33, 34, 35, 38) },
+    { id: 't-mitose', title: "Cycle cellulaire et mitose", desc: "Hors du cours : phases du cycle, mitose, cytodièse et méiose.", questions: mitoseQuestions }
+];
+themes.forEach(t => addQuiz({ ...t, back: '#/' }));
+
+const dynamicQuizzes = {};   // quiz créés pendant la visite : IA et « mes erreurs »
+const getQuiz = (id) => quizzes[id] || dynamicQuizzes[id] || null;
+const sizeOf = (q) => q.count || (Array.isArray(q.questions) ? q.questions.length : 0);
+
+/* =====================================================================
+   Scores sauvegardés sur l'appareil (aucun compte, rien n'est envoyé)
+   ===================================================================== */
+const STORE_KEY = 'bioquiz.progress.v2';
+const store = {
+    read() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; } },
+    write(obj) { try { localStorage.setItem(STORE_KEY, JSON.stringify(obj)); } catch (e) { /* stockage indisponible */ } }
+};
+function recordResult(id, score, total) {
+    const all = store.read();
+    const cur = all[id] || { attempts: 0, best: 0, total };
+    cur.attempts += 1;
+    if (!cur.total || score / total >= cur.best / cur.total) { cur.best = score; cur.total = total; }
+    all[id] = cur;
+    store.write(all);
+}
+const resultOf = (id) => store.read()[id] || null;
+
+/* =====================================================================
+   Petits outils d'affichage
+   ===================================================================== */
+const main = document.getElementById('main');
+
+function h(tag, props, ...kids) {
+    const node = document.createElement(tag);
+    for (const [key, val] of Object.entries(props || {})) {
+        if (val === null || val === undefined || val === false) continue;
+        if (key === 'class') node.className = val;
+        else if (key === 'text') node.textContent = val;
+        else if (key === 'html') node.innerHTML = val;          // uniquement des icônes SVG écrites ici
+        else if (key.startsWith('on')) node.addEventListener(key.slice(2).toLowerCase(), val);
+        else node.setAttribute(key, val === true ? '' : val);
+    }
+    kids.flat().forEach(k => {
+        if (k === null || k === undefined || k === false) return;
+        node.append(k.nodeType ? k : document.createTextNode(k));
+    });
+    return node;
+}
+
+const ICON = {
+    chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    redo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>'
+};
+const icon = (name) => h('span', { class: 'ico', 'aria-hidden': 'true', html: ICON[name] });
+
+// Vue demandée. On l'affiche directement (même si le navigateur bloque l'adresse, par exemple
+// dans un aperçu intégré), puis on met l'adresse à jour pour que le bouton retour fonctionne.
+let currentHash = null;
+function go(hash) {
+    currentHash = hash;
+    try { if (location.hash !== hash) location.hash = hash; } catch (e) { /* aperçu intégré : pas grave */ }
+    render(hash);
+}
+
+function mount(title, ...nodes) {
+    document.title = title ? title + ' - BioQuiz' : 'BioQuiz - Biologie cellulaire, Licence 1';
+    main.replaceChildren(...nodes);
+    window.scrollTo(0, 0);
+}
+
+function scoreBadge(res) {
+    if (!res) return null;
+    const pct = res.best / res.total;
+    return h('span', { class: 'score ' + (pct >= 0.8 ? 'good' : pct < 0.5 ? 'low' : ''), text: `${res.best}/${res.total}` });
+}
+
+// Emblème : un champ de microscope. L'anneau se remplit avec les quiz terminés.
+function lens(fraction) {
+    const C = 2 * Math.PI * 54;
+    const svg = h('span', { class: 'lens', role: 'img', 'aria-label': 'Progression sur les quiz', html: `
+        <svg viewBox="0 0 120 120" width="100%" height="100%" aria-hidden="true">
+            <defs><clipPath id="field"><circle cx="60" cy="60" r="46"/></clipPath></defs>
+            <circle class="ring-track" cx="60" cy="60" r="54" fill="none" stroke-width="5"/>
+            <circle class="ring" cx="60" cy="60" r="54" fill="none" stroke-width="5" stroke-linecap="round"
+                    transform="rotate(-90 60 60)" stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${C.toFixed(2)}"/>
+            <g clip-path="url(#field)">
+                <rect width="120" height="120" fill="var(--hema-soft)"/>
+                <g fill="var(--eosin-soft)" stroke="var(--eosin)" stroke-width="1.4">
+                    <ellipse cx="42" cy="46" rx="21" ry="17"/>
+                    <ellipse cx="80" cy="40" rx="15" ry="19"/>
+                    <ellipse cx="72" cy="80" rx="22" ry="16"/>
+                    <ellipse cx="33" cy="82" rx="14" ry="12"/>
+                    <ellipse cx="100" cy="68" rx="10" ry="12"/>
+                </g>
+                <g fill="var(--hema)">
+                    <circle cx="44" cy="47" r="8"/><circle cx="81" cy="40" r="6.5"/><circle cx="74" cy="81" r="9"/>
+                    <circle cx="33" cy="83" r="5.5"/><circle cx="101" cy="68" r="4.5"/>
+                </g>
+                <g fill="var(--hema-soft)"><circle cx="46" cy="45" r="2"/><circle cx="76" cy="79" r="2.2"/></g>
+            </g>
+        </svg>` });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        const ring = svg.querySelector('.ring');
+        if (ring) ring.setAttribute('stroke-dashoffset', (C * (1 - fraction)).toFixed(2));
+    }));
+    return svg;
+}
+
+/* =====================================================================
+   Vue : accueil
+   ===================================================================== */
+function quizRow(q) {
+    const res = resultOf(q.id);
+    return h('a', { class: 'row', href: '#/quiz/' + q.id },
+        h('div', { class: 'body' },
+            h('div', { class: 'title', text: q.title }),
+            h('div', { class: 'desc', text: q.desc })),
+        h('div', { class: 'side' },
+            scoreBadge(res) || h('span', { class: 'todo', text: 'À faire' }),
+            h('span', { text: sizeOf(q) + ' questions' })),
+        icon('chevron'));
+}
+
+function viewHome() {
+    const all = Object.values(quizzes);
+    const progress = store.read();
+    const done = all.filter(q => progress[q.id]).length;
+
+    const depart = quizzes['depart'];
+    const departRes = resultOf('depart');
+
+    const chapterRows = chapters.map(ch => {
+        if (ch.soon) {
+            return h('div', { class: 'row soon', 'aria-disabled': 'true' },
+                h('div', { class: 'num', text: ch.roman }),
+                h('div', { class: 'body' }, h('div', { class: 'title', text: ch.title })),
+                h('span', { class: 'badge', text: 'Bientôt' }));
         }
-        updateCounts();
+        const total = ch.quizzes.length;
+        const finished = ch.quizzes.filter(id => progress[id]).length;
+        return h('a', { class: 'row', href: '#/chapitre/' + ch.n },
+            h('div', { class: 'num', text: ch.roman }),
+            h('div', { class: 'body' },
+                h('div', { class: 'title', text: ch.title }),
+                h('div', { class: 'desc', text: ch.desc })),
+            h('div', { class: 'side' },
+                h('span', { class: finished ? 'score' + (finished === total ? ' good' : '') : 'todo', text: finished ? `${finished}/${total} terminés` : `${total} quiz` })),
+            icon('chevron'));
+    });
 
-        // Mélange Fisher-Yates
-        function shuffle(arr) {
-            const a = [...arr];
-            for (let i = a.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [a[i], a[j]] = [a[j], a[i]];
+    const themeDetails = h('details', { class: 'themes' },
+        h('summary', { text: 'Révisions rapides par thème' }),
+        h('p', { text: 'Des mini-quiz de 6 à 11 questions, découpés dans le test de départ, pour réviser un seul sujet à la fois.' }),
+        h('div', { class: 'panel' }, themes.map(t => quizRow(quizzes[t.id]))));
+
+    mount('',
+        h('section', { class: 'hero' },
+            h('div', {},
+                h('h1', { text: 'Biologie cellulaire' }),
+                h('p', { text: 'Quiz de révision pour la Licence 1. Choisis un chapitre, réponds, puis revois tes erreurs.' }),
+                h('p', { class: 'tally', text: `${done} quiz terminé${done > 1 ? 's' : ''} sur ${all.length}` })),
+            lens(done / all.length)),
+
+        h('a', { class: 'banner', href: '#/quiz/depart' },
+            h('h2', { text: depart.title }),
+            h('p', { text: depart.desc }),
+            h('div', { class: 'foot' },
+                h('span', { text: departRes ? `Meilleur score : ${departRes.best}/${departRes.total}` : '45 questions' }),
+                h('span', { class: 'go' }, departRes ? 'Refaire' : 'Commencer', icon('chevron')))),
+
+        h('h2', { text: 'Programme du cours' }),
+        h('p', { class: 'hint', text: 'UE Biologie cellulaire et moléculaire. Les chapitres grisés arrivent bientôt.' }),
+        h('div', { class: 'panel' }, chapterRows),
+
+        themeDetails);
+}
+
+/* =====================================================================
+   Vue : chapitre
+   ===================================================================== */
+function viewChapter(n) {
+    const ch = chapters.find(c => String(c.n) === String(n));
+    if (!ch || ch.soon) { go('#/'); return; }
+    mount('Chapitre ' + ch.roman,
+        h('nav', { class: 'crumbs', 'aria-label': 'Fil d\'Ariane' },
+            h('a', { href: '#/', text: 'Accueil' }), icon('chevron'), h('span', { text: 'Chapitre ' + ch.roman })),
+        h('header', { class: 'chapter-head' },
+            h('div', { class: 'kicker', text: 'Chapitre ' + ch.roman }),
+            h('h1', { text: ch.title }),
+            h('p', { text: ch.desc })),
+        h('h2', { text: 'Les quiz du chapitre' }),
+        h('div', { class: 'panel' }, ch.quizzes.map(id => quizRow(quizzes[id]))));
+}
+
+/* =====================================================================
+   Vue : quiz
+   ===================================================================== */
+let run = null;   // état du quiz en cours
+
+function prepare(list) {
+    // On mélange l'ordre des réponses pour que la bonne ne soit pas toujours au même endroit.
+    return list.map(q => {
+        const good = q.options[q.answer];
+        const options = shuffle(q.options);
+        return { ...q, options, answer: options.indexOf(good) };
+    });
+}
+
+function startQuiz(id) {
+    const quiz = getQuiz(id);
+    if (!quiz) { go('#/'); return; }
+    const raw = typeof quiz.questions === 'function' ? quiz.questions() : quiz.questions;
+    run = { quiz, qs: prepare(raw), i: 0, score: 0, answers: [], locked: false };
+    renderQuestion();
+}
+
+function leaveQuiz() {
+    const started = run && (run.i > 0 || run.locked);
+    const back = run ? run.quiz.back : '#/';
+    if (!started) { go(back); return; }
+    const box = document.getElementById('leaveDialog');
+    if (box && box.showModal) {
+        box.dataset.back = back;
+        box.showModal();
+    } else if (confirm('Quitter ce quiz ? Ta progression sera perdue.')) {
+        go(back);
+    }
+}
+
+function renderQuestion() {
+    const { quiz, qs, i } = run;
+    const q = qs[i];
+    run.locked = false;
+
+    const opts = q.options.map((text, idx) =>
+        h('button', { class: 'opt', type: 'button', 'data-i': idx, onClick: () => answer(idx) },
+            h('span', { class: 'letter', text: String.fromCharCode(65 + idx) }),
+            h('span', { text })));
+
+    const feedback = h('div', { class: 'feedback', id: 'feedback', 'aria-live': 'polite', hidden: true });
+    const next = h('button', { class: 'btn btn-primary btn-block', id: 'nextBtn', type: 'button', onClick: nextQuestion },
+        i === qs.length - 1 ? 'Voir mon résultat' : 'Question suivante');
+    const actions = h('div', { class: 'actions', id: 'actions', hidden: true }, next);
+
+    mount(quiz.title,
+        h('div', { class: 'quiz-head' },
+            h('button', { class: 'btn back', type: 'button', 'aria-label': 'Quitter le quiz', onClick: leaveQuiz }, icon('back')),
+            h('div', { class: 'name' }, quiz.title)),
+        h('div', { class: 'meter' },
+            h('span', {}, 'Question ', h('b', { text: i + 1 }), ' sur ' + qs.length),
+            h('div', { class: 'bar', id: 'bar', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': qs.length, 'aria-valuenow': i },
+                h('i', { style: `width:${(i / qs.length) * 100}%` })),
+            h('span', {}, 'Score ', h('b', { id: 'scoreNow', text: run.score }))),
+        h('h1', { class: 'question', text: q.question }),
+        h('div', { class: 'opts', role: 'group', 'aria-label': 'Réponses possibles' }, opts),
+        feedback,
+        actions);
+}
+
+function answer(idx) {
+    if (!run || run.locked) return;
+    run.locked = true;
+    const q = run.qs[run.i];
+    const ok = idx === q.answer;
+    if (ok) run.score++;
+    run.answers.push({ q, chosen: idx, ok });
+    document.getElementById('scoreNow').textContent = run.score;
+    document.querySelector('#bar i').style.width = `${((run.i + 1) / run.qs.length) * 100}%`;
+    document.getElementById('bar').setAttribute('aria-valuenow', run.i + 1);
+
+    document.querySelectorAll('.opt').forEach((btn, n) => {
+        btn.classList.add('locked');
+        const letter = btn.querySelector('.letter');
+        if (n === q.answer) {
+            btn.classList.add('correct');
+            letter.replaceChildren(icon('check'));
+        } else if (n === idx) {
+            btn.classList.add('wrong');
+            letter.replaceChildren(icon('cross'));
+        } else {
+            btn.classList.add('dim');
+        }
+    });
+
+    const fb = document.getElementById('feedback');
+    fb.className = 'feedback ' + (ok ? 'ok' : 'ko');
+    fb.replaceChildren(
+        h('strong', { text: ok ? 'Bonne réponse' : 'Réponse incorrecte' }),
+        q.explanation ? h('p', { text: q.explanation }) : null);
+    fb.hidden = false;
+
+    const actions = document.getElementById('actions');
+    actions.hidden = false;
+    document.getElementById('nextBtn').focus({ preventScroll: true });
+    actions.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function nextQuestion() {
+    if (!run || !run.locked) return;
+    run.i++;
+    if (run.i < run.qs.length) renderQuestion(); else renderResult();
+}
+
+/* =====================================================================
+   Vue : résultat et correction
+   ===================================================================== */
+function renderResult() {
+    const { quiz, qs, score, answers } = run;
+    const total = qs.length;
+    const pct = Math.round((score / total) * 100);
+    const misses = answers.filter(a => !a.ok);
+
+    const savable = !!quizzes[quiz.id];
+    const before = savable ? resultOf(quiz.id) : null;
+    if (savable) recordResult(quiz.id, score, total);
+    const best = savable ? resultOf(quiz.id) : null;
+    const newBest = savable && (!before || score / total > before.best / before.total);
+
+    const verdict = pct >= 85 ? 'Excellent. Tu maîtrises ce sujet.'
+        : pct >= 60 ? 'Bon résultat. Revois tes erreurs pour monter encore.'
+        : 'Pas encore. Relis le cours, puis refais ce quiz.';
+
+    const review = misses.length === 0
+        ? h('div', { class: 'review' }, h('p', { class: 'all-good', text: 'Aucune erreur : toutes tes réponses sont justes.' }))
+        : h('section', { class: 'review', id: 'review' },
+            h('h2', { text: `Tes erreurs (${misses.length})` }),
+            misses.map(m => h('article', { class: 'miss' },
+                h('p', { class: 'q', text: m.q.question }),
+                h('div', { class: 'a no' }, icon('cross'), h('span', {}, 'Ta réponse : ', m.q.options[m.chosen])),
+                h('div', { class: 'a yes' }, icon('check'), h('span', {}, 'Bonne réponse : ', m.q.options[m.q.answer])),
+                m.q.explanation ? h('p', { class: 'why', text: m.q.explanation }) : null)));
+
+    const retryMisses = misses.length
+        ? h('button', { class: 'btn btn-primary', type: 'button', onClick: () => {
+              dynamicQuizzes['erreurs'] = { id: 'erreurs', title: 'Mes erreurs : ' + quiz.title, desc: '', questions: misses.map(m => m.q), back: quiz.back };
+              go('#/quiz/erreurs');
+          } }, icon('redo'), `Refaire mes ${misses.length} erreur${misses.length > 1 ? 's' : ''}`)
+        : null;
+
+    mount('Résultat',
+        h('section', { class: 'result' },
+            h('div', { class: 'kicker', text: quiz.title }),
+            h('div', { class: 'score-big' }, String(score), h('span', { text: ' / ' + total })),
+            h('p', { class: 'verdict', text: verdict }),
+            h('div', { class: 'stats' },
+                h('span', {}, h('b', { text: pct + ' %' }), ' de bonnes réponses'),
+                best ? h('span', {}, 'Meilleur score : ', h('b', { text: `${best.best}/${best.total}` }), newBest && before ? ' (nouveau record)' : '') : null),
+            h('div', { class: 'stack two' },
+                retryMisses,
+                h('button', { class: 'btn' + (retryMisses ? '' : ' btn-primary'), type: 'button', onClick: () => startQuiz(quiz.id) }, icon('redo'), 'Recommencer'),
+                h('a', { class: 'btn', href: quiz.back, text: quiz.back === '#/' ? "Retour à l'accueil" : 'Retour au chapitre' }))),
+        review);
+}
+
+/* =====================================================================
+   Navigation (le bouton « retour » du téléphone fonctionne)
+   ===================================================================== */
+function render(hash) {
+    const parts = String(hash || '').replace(/^#\/?/, '').split('/').filter(Boolean);
+    run = null;
+    if (parts[0] === 'chapitre') viewChapter(parts[1]);
+    else if (parts[0] === 'quiz') startQuiz(parts[1]);
+    else viewHome();
+}
+function route() { currentHash = location.hash || '#/'; render(currentHash); }
+
+// Bouton retour du téléphone, ou adresse modifiée à la main
+window.addEventListener('hashchange', () => {
+    const now = location.hash || '#/';
+    if (now !== currentHash) route();
+});
+
+// Les liens internes (#/...) passent par go() : ils marchent aussi dans un aperçu intégré,
+// où un lien « # » enverrait sinon vers une page blanche.
+document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href^="#/"]');
+    if (!a || e.defaultPrevented || e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    go(a.getAttribute('href'));
+});
+
+// Boîte « Quitter le quiz ? »
+(function () {
+    const box = document.getElementById('leaveDialog');
+    if (!box) return;
+    document.getElementById('leaveStay').addEventListener('click', () => box.close());
+    document.getElementById('leaveGo').addEventListener('click', () => { const back = box.dataset.back || '#/'; box.close(); go(back); });
+    box.addEventListener('click', (e) => { if (e.target === box) box.close(); });
+})();
+
+// Clavier : A à D (ou 1 à 4) pour répondre, Entrée pour continuer
+document.addEventListener('keydown', (e) => {
+    if (!run || document.getElementById('aiDialog').open || document.getElementById('leaveDialog').open || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^(input|textarea|select)$/i.test(e.target.tagName)) return;
+    if (!run.locked) {
+        const k = e.key.toLowerCase();
+        const idx = 'abcd'.indexOf(k) >= 0 ? 'abcd'.indexOf(k) : ('1234'.indexOf(k) >= 0 ? '1234'.indexOf(k) : -1);
+        if (idx >= 0 && idx < run.qs[run.i].options.length) { e.preventDefault(); answer(idx); }
+    } else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
+        e.preventDefault(); nextQuestion();
+    }
+});
+
+/* =====================================================================
+   Créer un quiz avec l'IA (le serveur /api/generate garde la clé secrète)
+   ===================================================================== */
+const PDF_MAX_CHARS = 6000;
+const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const CODE_KEY = 'bioquiz.code';
+
+const $ = (id) => document.getElementById(id);
+const dlg = $('aiDialog');
+let pdfDoc = null, pdfText = '', pdfBusy = false;
+
+function aiError(msg) { const e = $('aiError'); e.textContent = msg; e.hidden = !msg; }
+
+$('openAI').addEventListener('click', () => {
+    aiError('');
+    try { $('aiCode').value = localStorage.getItem(CODE_KEY) || ''; } catch (e) { /* ignoré */ }
+    dlg.showModal();
+});
+$('aiClose').addEventListener('click', () => dlg.close());
+dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+
+// pdf.js n'est chargé que si quelqu'un choisit un PDF
+let pdfjsPromise = null;
+function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (!pdfjsPromise) {
+        pdfjsPromise = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = PDFJS_URL;
+            s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER; resolve(window.pdfjsLib); };
+            s.onerror = () => { pdfjsPromise = null; reject(new Error('chargement')); };
+            document.head.appendChild(s);
+        });
+    }
+    return pdfjsPromise;
+}
+
+function clearPdf() {
+    pdfDoc = null; pdfText = '';
+    $('aiPdf').value = '';
+    $('pdfBox').hidden = true;
+    $('pdfInfo').textContent = '';
+}
+$('pdfClear').addEventListener('click', clearPdf);
+
+$('aiPdf').addEventListener('change', async (e) => {
+    aiError('');
+    const file = e.target.files[0];
+    if (!file) { clearPdf(); return; }
+    if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') { clearPdf(); aiError('Choisis un fichier PDF.'); return; }
+    if (file.size > 20 * 1024 * 1024) { clearPdf(); aiError('PDF trop lourd : 20 Mo maximum.'); return; }
+
+    $('pdfBox').hidden = false;
+    $('pdfInfo').textContent = 'Lecture du PDF...';
+    pdfBusy = true;
+    try {
+        const lib = await loadPdfJs();
+        pdfDoc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+        pdfDoc.fileLabel = file.name;
+        $('pdfFrom').value = 1;
+        $('pdfTo').value = pdfDoc.numPages;
+        $('pdfFrom').max = $('pdfTo').max = pdfDoc.numPages;
+        await readPdfRange();
+    } catch (err) {
+        clearPdf();
+        aiError(err.message === 'chargement'
+            ? "Le lecteur PDF n'a pas pu se charger. Vérifie ta connexion puis réessaie."
+            : "Impossible de lire ce PDF : il est peut-être protégé ou abîmé.");
+    } finally { pdfBusy = false; }
+});
+$('pdfFrom').addEventListener('change', readPdfRange);
+$('pdfTo').addEventListener('change', readPdfRange);
+
+async function readPdfRange() {
+    if (!pdfDoc) return;
+    pdfBusy = true;
+    try {
+        let from = parseInt($('pdfFrom').value, 10) || 1;
+        let to = parseInt($('pdfTo').value, 10) || pdfDoc.numPages;
+        from = Math.min(Math.max(1, from), pdfDoc.numPages);
+        to = Math.min(Math.max(from, to), pdfDoc.numPages);
+        $('pdfFrom').value = from; $('pdfTo').value = to;
+        $('pdfInfo').textContent = 'Lecture des pages...';
+
+        let text = '', last = from - 1, truncated = false;
+        for (let p = from; p <= to; p++) {
+            const page = await pdfDoc.getPage(p);
+            const content = await page.getTextContent();
+            const pageText = content.items.map(it => it.str).join(' ').replace(/\s+/g, ' ').trim();
+            if (text.length + pageText.length + 1 > PDF_MAX_CHARS) {
+                if (!text) { text = pageText.slice(0, PDF_MAX_CHARS); last = p; }
+                truncated = true;
+                break;
             }
-            return a;
+            text += (text ? '\n' : '') + pageText;
+            last = p;
         }
+        pdfText = text.trim();
+        $('pdfInfo').textContent = !pdfText
+            ? "Aucun texte trouvé : ce PDF est probablement un scan. Utilise un PDF dont on peut sélectionner le texte."
+            : `${pdfDoc.fileLabel} : pages ${from} à ${last} lues` + (truncated ? ". Limite de taille atteinte : choisis un autre intervalle pour la suite." : ".");
+    } catch (err) {
+        pdfText = '';
+        $('pdfInfo').textContent = 'Erreur de lecture des pages.';
+    } finally { pdfBusy = false; }
+}
 
-        // Mélange les options de chaque question pour que la bonne réponse ne soit pas toujours en A
-        function prepareQuestions(list) {
-            return list.map(q => {
-                const correctText = q.options[q.answer];
-                const options = shuffle(q.options);
-                return { ...q, options, answer: options.indexOf(correctText) };
-            });
+function validateQuestions(list) {
+    if (!Array.isArray(list) || !list.length) throw new Error('Aucune question valide reçue.');
+    return list.map((q, i) => {
+        const options = Array.isArray(q.options) ? q.options.map(String) : [];
+        const answer = Number(q.answer);
+        if (!q.question || options.length < 2 || !Number.isInteger(answer) || answer < 0 || answer >= options.length) {
+            throw new Error(`La question ${i + 1} est mal formée.`);
         }
+        return { question: String(q.question), options, answer, explanation: String(q.explanation || '') };
+    });
+}
 
-        function showNext(visible) {
-            nextBtn.classList.toggle('hidden', !visible);
-            nextBtn.classList.toggle('flex', visible);
+$('aiSubmit').addEventListener('click', generate);
+$('aiCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') generate(); });
+
+async function generate() {
+    const topic = $('aiTopic').value.trim();
+    const count = Number($('aiCount').value);
+    const code = $('aiCode').value.trim();
+    const btn = $('aiSubmit');
+
+    aiError('');
+    if (pdfBusy) { aiError('Patiente : le PDF est en cours de lecture.'); return; }
+    if (pdfDoc && !pdfText) { aiError("Ce PDF ne contient pas de texte lisible. Retire-le ou choisis un autre fichier."); return; }
+    if (topic.length < 3 && !pdfText) { aiError('Écris un sujet ou ajoute un PDF.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Création en cours...';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 45000);
+
+    try {
+        const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, count, text: pdfText, code }),
+            signal: controller.signal
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (res.status === 401) { try { localStorage.removeItem(CODE_KEY); } catch (e) { /* ignoré */ } }
+            throw new Error(data.error || `Erreur du serveur (${res.status}).`);
         }
+        try { localStorage.setItem(CODE_KEY, code); } catch (e) { /* ignoré */ }
 
-        function startQuiz() {
-            quizQuestions = prepareQuestions(quizQuestions);
-            currentQuestionIndex = 0;
-            score = 0;
-            introCard.classList.add('hidden');
-            resultCard.classList.add('hidden');
-            quizCard.classList.remove('hidden');
-            showQuestion();
-        }
+        dynamicQuizzes['ia'] = { id: 'ia', title: "Quiz créé par l'IA", desc: '', questions: validateQuestions(data.questions), back: '#/' };
+        dlg.close();
+        go('#/quiz/ia');
+    } catch (err) {
+        aiError(err.name === 'AbortError' ? 'Le serveur met trop de temps à répondre. Réessaie.' : err.message);
+    } finally {
+        clearTimeout(timer);
+        btn.disabled = false;
+        btn.textContent = 'Créer le quiz';
+    }
+}
 
-        function showQuestion() {
-            answered = false;
-            showNext(false);
-            explanationBox.classList.add('hidden');
-
-            const q = quizQuestions[currentQuestionIndex];
-            const isLast = currentQuestionIndex === quizQuestions.length - 1;
-            nextBtn.querySelector('span').textContent = isLast ? 'Voir le résultat' : 'Question suivante';
-
-            questionProgressText.textContent = `Question ${currentQuestionIndex + 1} / ${quizQuestions.length}`;
-            scoreText.textContent = `Score : ${score}`;
-            progressBar.style.width = `${(currentQuestionIndex / quizQuestions.length) * 100}%`;
-
-            questionTitle.textContent = q.question;
-            optionsContainer.innerHTML = '';
-
-            q.options.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left p-4 rounded-xl bg-slate-900/60 border border-slate-700 hover:border-emerald-500/50 hover:bg-slate-700/50 transition flex items-center justify-between gap-3 text-sm sm:text-base font-medium group";
-                btn.onclick = () => selectOption(idx);
-
-                const left = document.createElement('span');
-                left.className = "flex items-center gap-3";
-
-                const letter = document.createElement('span');
-                letter.className = "w-7 h-7 shrink-0 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center text-xs font-bold group-hover:border-emerald-500/50 group-hover:text-emerald-400";
-                letter.textContent = String.fromCharCode(65 + idx);
-
-                const label = document.createElement('span');
-                label.textContent = opt; // textContent : pas d'injection HTML possible
-
-                left.append(letter, label);
-
-                const icon = document.createElement('i');
-                icon.className = "fa-regular fa-circle shrink-0 text-slate-600 group-hover:text-emerald-400";
-
-                btn.append(left, icon);
-                optionsContainer.appendChild(btn);
-            });
-        }
-
-        function selectOption(index) {
-            if (answered) return;
-            answered = true;
-
-            const q = quizQuestions[currentQuestionIndex];
-            const isCorrect = (index === q.answer);
-            if (isCorrect) score++;
-
-            const buttons = optionsContainer.children;
-            for (let i = 0; i < buttons.length; i++) {
-                const icon = buttons[i].querySelector('i');
-                buttons[i].disabled = true;
-                buttons[i].classList.remove('hover:border-emerald-500/50', 'hover:bg-slate-700/50');
-                if (i === q.answer) {
-                    buttons[i].className = "w-full text-left p-4 rounded-xl bg-emerald-500/20 border-2 border-emerald-500 text-emerald-200 text-sm sm:text-base font-medium flex items-center justify-between gap-3";
-                    icon.className = "fa-solid fa-circle-check shrink-0 text-emerald-400 text-lg";
-                } else if (i === index) {
-                    buttons[i].className = "w-full text-left p-4 rounded-xl bg-rose-500/20 border-2 border-rose-500 text-rose-200 text-sm sm:text-base font-medium flex items-center justify-between gap-3";
-                    icon.className = "fa-solid fa-circle-xmark shrink-0 text-rose-400 text-lg";
-                } else {
-                    buttons[i].classList.add('opacity-40');
-                }
-            }
-
-            explanationBox.className = isCorrect
-                ? "mb-6 p-4 rounded-xl border text-sm leading-relaxed bg-emerald-950/40 border-emerald-500/30 text-emerald-300"
-                : "mb-6 p-4 rounded-xl border text-sm leading-relaxed bg-rose-950/40 border-rose-500/30 text-rose-300";
-
-            explanationBox.innerHTML = '';
-            const title = document.createElement('div');
-            title.className = "font-bold mb-1 flex items-center gap-2";
-            const ti = document.createElement('i');
-            ti.className = isCorrect ? 'fa-solid fa-circle-check' : 'fa-solid fa-triangle-exclamation';
-            title.append(ti, document.createTextNode(isCorrect ? 'Excellente réponse !' : 'Réponse incorrecte'));
-            const text = document.createElement('div');
-            text.textContent = q.explanation || '';
-            explanationBox.append(title, text);
-            explanationBox.classList.remove('hidden');
-
-            scoreText.textContent = `Score : ${score}`;
-            showNext(true);
-        }
-
-        function nextQuestion() {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < quizQuestions.length) {
-                showQuestion();
-            } else {
-                showFinalResults();
-            }
-        }
-
-        function showFinalResults() {
-            progressBar.style.width = '100%';
-            quizCard.classList.add('hidden');
-            resultCard.classList.remove('hidden');
-
-            const total = quizQuestions.length;
-            const percentage = Math.round((score / total) * 100);
-
-            $('finalScore').textContent = `${score} / ${total}`;
-            $('scorePercentage').textContent = `${percentage}% de réussite`;
-
-            const comment = $('scoreComment');
-            if (percentage >= 85) {
-                comment.textContent = "Félicitations ! Vous maîtrisez parfaitement la cytologie.";
-            } else if (percentage >= 60) {
-                comment.textContent = "Bon travail ! Quelques révisions vous permettront d'atteindre le top.";
-            } else {
-                comment.textContent = "Continuez de relire vos cours pour consolider vos acquis.";
-            }
-        }
-
-        function restartQuiz() { startQuiz(); }
-
-        // ---------- Modale IA ----------
-        function openAIModal() {
-            aiError.classList.add('hidden');
-            aiModal.classList.remove('hidden');
-            aiModal.classList.add('flex');
-        }
-        function closeAIModal() {
-            aiModal.classList.add('hidden');
-            aiModal.classList.remove('flex');
-        }
-        aiModal.addEventListener('click', (e) => { if (e.target === aiModal) closeAIModal(); });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAIModal(); });
-
-        function resetDefaultQuestions() {
-            quizQuestions = [...defaultQuestions];
-            updateCounts();
-            closeAIModal();
-            quizCard.classList.add('hidden');
-            resultCard.classList.add('hidden');
-            introCard.classList.remove('hidden');
-        }
-
-        function showAIError(msg) {
-            aiError.textContent = msg;
-            aiError.classList.remove('hidden');
-        }
-
-        // Vérifie et nettoie les questions renvoyées par l'IA
-        function validateQuestions(list) {
-            if (!Array.isArray(list) || list.length === 0) throw new Error("Aucune question valide reçue.");
-            return list.map((q, i) => {
-                const options = Array.isArray(q.options) ? q.options.map(String) : [];
-                const answer = Number(q.answer);
-                if (!q.question || options.length < 2 || !Number.isInteger(answer) || answer < 0 || answer >= options.length) {
-                    throw new Error(`La question ${i + 1} est mal formée.`);
-                }
-                return { question: String(q.question), options, answer, explanation: String(q.explanation || '') };
-            });
-        }
-
-        // ---------- Import PDF ----------
-        const PDF_MAX_CHARS = 12000; // limite de texte envoyé à l'IA
-        let pdfDoc = null;
-        let pdfText = '';
-        let pdfBusy = false;
-        const pdfBox = $('pdfBox');
-        const pdfInfo = $('pdfInfo');
-
-        if (typeof pdfjsLib !== 'undefined') {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        }
-
-        function clearPdf() {
-            pdfDoc = null;
-            pdfText = '';
-            $('pdfInput').value = '';
-            pdfBox.classList.add('hidden');
-            pdfInfo.textContent = '';
-        }
-
-        async function handlePdfSelect(input) {
-            aiError.classList.add('hidden');
-            const file = input.files[0];
-            if (!file) { clearPdf(); return; }
-
-            if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
-                clearPdf();
-                showAIError("Choisis un fichier PDF.");
-                return;
-            }
-            if (file.size > 20 * 1024 * 1024) {
-                clearPdf();
-                showAIError("PDF trop lourd (20 Mo maximum).");
-                return;
-            }
-            if (typeof pdfjsLib === 'undefined') {
-                clearPdf();
-                showAIError("Le lecteur PDF n'a pas pu se charger. Vérifie ta connexion et recharge la page.");
-                return;
-            }
-
-            pdfBox.classList.remove('hidden');
-            pdfInfo.textContent = 'Lecture du PDF...';
-            pdfBusy = true;
-            try {
-                const data = await file.arrayBuffer();
-                pdfDoc = await pdfjsLib.getDocument({ data }).promise;
-                pdfDoc.fileLabel = file.name;
-                $('pdfFrom').value = 1;
-                $('pdfTo').value = pdfDoc.numPages;
-                $('pdfFrom').max = $('pdfTo').max = pdfDoc.numPages;
-                await readPdfRange();
-            } catch (e) {
-                clearPdf();
-                showAIError("Impossible de lire ce PDF (fichier protégé ou abîmé ?).");
-            } finally {
-                pdfBusy = false;
-            }
-        }
-
-        async function readPdfRange() {
-            if (!pdfDoc) return;
-            pdfBusy = true;
-            try {
-                let from = parseInt($('pdfFrom').value, 10) || 1;
-                let to = parseInt($('pdfTo').value, 10) || pdfDoc.numPages;
-                from = Math.min(Math.max(1, from), pdfDoc.numPages);
-                to = Math.min(Math.max(from, to), pdfDoc.numPages);
-                $('pdfFrom').value = from;
-                $('pdfTo').value = to;
-                pdfInfo.textContent = 'Lecture des pages...';
-
-                let text = '', last = from - 1, truncated = false;
-                for (let p = from; p <= to; p++) {
-                    const page = await pdfDoc.getPage(p);
-                    const content = await page.getTextContent();
-                    const pageText = content.items.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim();
-                    if (text.length + pageText.length + 1 > PDF_MAX_CHARS) {
-                        if (!text) { text = pageText.slice(0, PDF_MAX_CHARS); last = p; }
-                        truncated = true;
-                        break;
-                    }
-                    text += (text ? '\n' : '') + pageText;
-                    last = p;
-                }
-
-                pdfText = text.trim();
-                if (!pdfText) {
-                    pdfInfo.textContent = "Aucun texte trouvé : ce PDF est probablement un scan (image). Utilise un PDF dont on peut sélectionner le texte.";
-                } else {
-                    pdfInfo.textContent = `✓ ${pdfDoc.fileLabel} : pages ${from} à ${last} lues`
-                        + (truncated ? " (limite de taille atteinte : choisis un autre intervalle pour la suite)." : ".");
-                }
-            } catch (e) {
-                pdfText = '';
-                pdfInfo.textContent = "Erreur de lecture des pages.";
-            } finally {
-                pdfBusy = false;
-            }
-        }
-
-        // ---------- Génération ----------
-        async function generateAIQuiz() {
-            const topic = $('aiPromptInput').value.trim();
-            const count = Number($('aiCount').value);
-            const submitBtn = $('aiSubmitBtn');
-
-            aiError.classList.add('hidden');
-            if (pdfBusy) {
-                showAIError("Patiente, le PDF est en cours de lecture...");
-                return;
-            }
-            if (pdfDoc && !pdfText) {
-                showAIError("Ce PDF ne contient pas de texte lisible. Retire-le ou choisis un autre fichier.");
-                return;
-            }
-            if (topic.length < 3 && !pdfText) {
-                showAIError("Décris le sujet du quiz ou importe un PDF.");
-                return;
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Génération...`;
-
-            const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), 45000);
-
-            try {
-                // La clé API reste sur le serveur : elle n'apparaît jamais ici.
-                const res = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ topic, count, text: pdfText }),
-                    signal: controller.signal
-                });
-
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(data.error || `Erreur du serveur (${res.status}).`);
-                }
-
-                quizQuestions = validateQuestions(data.questions);
-                updateCounts();
-                closeAIModal();
-                startQuiz();
-            } catch (e) {
-                const msg = e.name === 'AbortError'
-                    ? "Le serveur met trop de temps à répondre. Réessaie."
-                    : e.message;
-                showAIError("Erreur de génération : " + msg);
-            } finally {
-                clearTimeout(timer);
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Générer`;
-            }
-        }
+route();
     </script>
 </body>
 </html>
+
